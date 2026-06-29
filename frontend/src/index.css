@@ -126,7 +126,6 @@ body {
   .badge-amber  { @apply badge bg-amber-50    text-amber-700   border border-amber-200;   }
   .badge-red    { @apply badge bg-red-50      text-red-700     border border-red-200;     }
   .badge-blue   { @apply badge bg-blue-50     text-blue-700    border border-blue-200;    }
-  .badge-purple { @apply badge bg-purple-50   text-purple-700  border border-purple-200;  }
 
   /* Section heading */
   .section-title {
@@ -164,7 +163,7 @@ body {
 
   /* Page wrapper */
   .page-container {
-    @apply flex-1 p-6 overflow-y-auto animate-fade-in;
+    @apply flex-1 p-4 sm:p-6 overflow-y-auto animate-fade-in;
   }
 
   /* Dashboard grid */
@@ -175,12 +174,6 @@ body {
 
 /* ─── Utility Layer Extras ──────────────────────────────────── */
 @layer utilities {
-  .text-gradient-green {
-    @apply bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent;
-  }
-  .text-gradient-amber {
-    @apply bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent;
-  }
   .glass {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);

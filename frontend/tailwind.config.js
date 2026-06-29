@@ -49,7 +49,7 @@ export default {
           potassium:   '#f97316', // orange
           temperature: '#ef4444', // red
           humidity:    '#06b6d4', // cyan
-          ph:          '#eab308', // yellow
+          moisture:    '#10b981', // emerald green
         },
       },
       fontFamily: {
@@ -58,7 +58,6 @@ export default {
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'hero-pattern': "url('/src/assets/pattern.svg')",
       },
       animation: {
         'pulse-slow':  'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

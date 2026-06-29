@@ -16,13 +16,13 @@ export const ROUTES = {
   // Auth
   LOGIN:    '/login',
   REGISTER: '/register',
-  FORGOT_PASSWORD: '/forgot-password',
 
   // Admin
-  ADMIN_DASHBOARD:  '/admin/dashboard',
-  ADMIN_USERS:      '/admin/users',
-  ADMIN_SENSORS:    '/admin/sensors',
-  ADMIN_SYSTEM:     '/admin/system',
+  ADMIN_DASHBOARD:     '/admin/dashboard',
+  ADMIN_USERS:         '/admin/users',
+  ADMIN_SENSORS:       '/admin/sensors',
+  ADMIN_DATA_MONITOR:  '/admin/data-monitor',
+  ADMIN_AI_DIAGNOSIS:  '/admin/ai-diagnosis',
 
   // Farmer
   FARMER_DASHBOARD: '/farmer/dashboard',
@@ -38,7 +38,7 @@ export const SENSOR_THRESHOLDS = {
   potassium:   { min: 0,   max: 300, unit: 'mg/kg', warning: 50,  critical: 25  },
   temperature: { min: 0,   max: 60,  unit: '°C',    warning: 40,  critical: 45  },
   humidity:    { min: 0,   max: 100, unit: '%',      warning: 20,  critical: 10  },
-  ph:          { min: 0,   max: 14,  unit: 'pH',     warning: 5.5, critical: 4.5 },
+  moisture:    { min: 0,   max: 100, unit: '%',      warning: 20,  critical: 10  },
 }
 
 // ─── Sensor Display Config ──────────────────────────────────────────────────
@@ -46,9 +46,9 @@ export const SENSOR_CONFIG = {
   nitrogen:    { label: 'Nitrogen',     icon: 'N',  color: '#3b82f6', unit: 'mg/kg' },
   phosphorus:  { label: 'Phosphorus',   icon: 'P',  color: '#a855f7', unit: 'mg/kg' },
   potassium:   { label: 'Potassium',    icon: 'K',  color: '#f97316', unit: 'mg/kg' },
-  temperature: { label: 'Temperature',  icon: '🌡', color: '#ef4444', unit: '°C'    },
-  humidity:    { label: 'Soil Humidity',icon: '💧', color: '#06b6d4', unit: '%'     },
-  ph:          { label: 'Soil pH',      icon: '⚗', color: '#eab308', unit: 'pH'    },
+  temperature: { label: 'Temperature',  icon: '°C', color: '#ef4444', unit: '°C'    },
+  humidity:    { label: 'Air Humidity', icon: 'H',  color: '#06b6d4', unit: '%'     },
+  moisture:    { label: 'Soil Moisture',icon: 'M',  color: '#10b981', unit: '%'     },
 }
 
 // ─── Weather ─────────────────────────────────────────────────────────────────

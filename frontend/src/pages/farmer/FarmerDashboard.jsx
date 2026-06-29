@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { mockGetSensorReadings, mockGetRecommendations } from '../../services/mockData'
-import { SENSOR_THRESHOLDS, SENSOR_CONFIG, SENSOR_POLL_INTERVAL, ROUTES } from '../../utils/constants'
+import api from '../../services/api'
+import { io } from 'socket.io-client'
+import { getSoilRecommendations } from '../../utils/recommendationEngine'
+import { SENSOR_THRESHOLDS, SENSOR_CONFIG, ROUTES } from '../../utils/constants'
+import {
+  FiZap, FiBarChart2, FiCloud, FiCpu, FiChevronRight,
+  FiAlertOctagon, FiAlertTriangle, FiCheckCircle, FiAlertCircle
+} from 'react-icons/fi'
+
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'
 
 export default function FarmerDashboard() {
   const { user } = useAuth()
@@ -10,28 +18,43 @@ export default function FarmerDashboard() {
   const [readings, setReadings] = useState(null)
   const [recommendations, setRecommendations] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState('')
 
-  const fetchReadings = async () => {
-    try {
-      const activeSensorId = user?.sensorIds?.[0] || 's001'
-      const data = await mockGetSensorReadings(activeSensorId)
-      setReadings(data)
-      setRecommendations(mockGetRecommendations(data))
-      setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
-    } catch (err) {
-      console.error('Error fetching sensor readings:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Poll for new readings
+  // Load latest reading once on mount
   useEffect(() => {
-    fetchReadings()
-    const interval = setInterval(fetchReadings, SENSOR_POLL_INTERVAL)
-    return () => clearInterval(interval)
+    const fetchLatest = async () => {
+      try {
+        setError(null)
+        const activeSensorId = user?.sensorIds?.[0] || 's001'
+        const { data: res } = await api.get(`/sensors/${activeSensorId}/latest`)
+        if (res.data) {
+          setReadings(res.data)
+          setRecommendations(getSoilRecommendations(res.data))
+          setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || 'Could not reach the sensor probe. Check your connection.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLatest()
   }, [user])
+
+  // Real-time updates via Socket.io
+  useEffect(() => {
+    const socket = io(SOCKET_URL, { transports: ['websocket'] })
+
+    socket.on('newReading', (data) => {
+      setReadings(data)
+      setRecommendations(getSoilRecommendations(data))
+      setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+      setError(null)
+    })
+
+    return () => socket.disconnect()
+  }, [])
 
   if (loading) {
     return (
@@ -42,17 +65,10 @@ export default function FarmerDashboard() {
     )
   }
 
-  // Helper to determine status level
   const getStatusLevel = (param, value) => {
     const limits = SENSOR_THRESHOLDS[param]
     if (!limits) return 'normal'
-
-    if (param === 'ph') {
-      if (value < limits.critical) return 'critical'
-      if (value < limits.warning) return 'warning'
-      return 'normal'
-    }
-    if (param === 'humidity') {
+    if (param === 'moisture' || param === 'humidity') {
       if (value < limits.critical) return 'critical'
       if (value < limits.warning) return 'warning'
       return 'normal'
@@ -62,7 +78,6 @@ export default function FarmerDashboard() {
       if (value > limits.warning) return 'warning'
       return 'normal'
     }
-    // NPK metrics
     if (value < limits.critical) return 'critical'
     if (value < limits.warning) return 'warning'
     return 'normal'
@@ -70,48 +85,68 @@ export default function FarmerDashboard() {
 
   const getStatusBadge = (level) => {
     if (level === 'critical') return <span className="badge-red">Critical</span>
-    if (level === 'warning') return <span className="badge-amber">Warning</span>
+    if (level === 'warning')  return <span className="badge-amber">Warning</span>
     return <span className="badge-green">Optimal</span>
+  }
+
+  const getRecIcon = (type) => {
+    if (type === 'danger')  return <FiAlertOctagon className="w-4 h-4 shrink-0 mt-0.5" />
+    if (type === 'warning') return <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+    return <FiCheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
+  }
+
+  const getAlertClass = (type) => {
+    if (type === 'danger')  return 'alert-danger'
+    if (type === 'warning') return 'alert-warning'
+    return 'alert-success'
   }
 
   return (
     <div className="page-container space-y-6">
-      
-      {/* ── Welcome & Status Summary ── */}
+
+      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Hi, {user?.name || 'Farmer'} 👋
+            Hi, {user?.name || 'Farmer'}
           </h1>
           <p className="text-slate-500 text-sm">
-            Here is the soil condition for your field <strong className="text-emerald-700">{user?.fieldName || 'Hassan North Field'}</strong>.
+            Soil condition for field{' '}
+            <strong className="text-emerald-700">{user?.fieldName || 'Hassan North Field'}</strong>.
           </p>
         </div>
-        
-        {/* Sync indicator */}
-        <div className="self-start sm:self-auto flex items-center gap-2 bg-slate-100 border border-slate-200 px-3.5 py-2 rounded-xl text-xs">
+
+        <div className="self-start sm:self-auto flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs">
           <span className="live-dot" />
-          <span className="text-slate-600">Telemetry polled at: <strong className="text-emerald-700 font-mono">{lastUpdated}</strong></span>
+          {lastUpdated
+            ? <span className="text-slate-600">Last sync: <strong className="text-emerald-700 font-mono">{lastUpdated}</strong></span>
+            : <span className="text-slate-400 italic">Waiting for ESP32 data…</span>
+          }
         </div>
       </div>
+
+      {/* ── Error banner ── */}
+      {error && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border bg-red-50 border-red-200 text-red-700 text-sm">
+          <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* ── Soil Metrics Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         {Object.entries(SENSOR_CONFIG).map(([key, cfg]) => {
-          const val = readings?.[key] || 0
+          const val = readings?.[key] ?? 0
           const statusLevel = getStatusLevel(key, val)
           const thresholds = SENSOR_THRESHOLDS[key]
-          
-          // Calculate percentage position for visual gauge bar
           const percent = Math.min(100, Math.max(0, ((val - thresholds.min) / (thresholds.max - thresholds.min)) * 100))
 
           return (
             <div key={key} className="card flex flex-col justify-between space-y-4 hover:-translate-y-0.5">
-              
-              {/* Card Header */}
+
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div 
+                  <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg border border-slate-200 shadow-sm"
                     style={{ backgroundColor: `${cfg.color}15`, color: cfg.color }}
                   >
@@ -125,20 +160,18 @@ export default function FarmerDashboard() {
                 {getStatusBadge(statusLevel)}
               </div>
 
-              {/* Card Value */}
               <div>
                 <p className="text-3xl font-extrabold tracking-tight" style={{ color: cfg.color }}>
                   {val.toFixed(1)} <span className="text-sm font-semibold text-slate-400">{cfg.unit}</span>
                 </p>
               </div>
 
-              {/* Gauge Progress Indicator */}
               <div className="space-y-1">
                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                  <div 
+                  <div
                     className="h-full rounded-full transition-all duration-1000"
-                    style={{ 
-                      width: `${percent}%`, 
+                    style={{
+                      width: `${percent}%`,
                       backgroundColor: statusLevel === 'critical' ? '#ef4444' : statusLevel === 'warning' ? '#f59e0b' : cfg.color
                     }}
                   />
@@ -154,84 +187,76 @@ export default function FarmerDashboard() {
         })}
       </div>
 
-      {/* ── Recommendations & Actions Grid ── */}
+      {/* ── Recommendations + Quick Utilities ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left 2 Columns: Recommendations */}
+
         <div className="lg:col-span-2 card space-y-4">
           <h2 className="section-title border-b border-slate-100 pb-3 flex items-center gap-2">
-            <span>📢</span> AgriSense Diagnostic Action Tips
+            <FiZap className="w-4 h-4 text-emerald-500" /> Intelligent Agronomic Advisory
           </h2>
 
           <div className="space-y-3">
-            {recommendations.map((rec, index) => {
-              const getAlertClass = (type) => {
-                if (type === 'danger') return 'alert-danger'
-                if (type === 'warning') return 'alert-warning'
-                return 'alert-success'
-              }
-              return (
-                <div 
-                  key={index} 
-                  className={`${getAlertClass(rec.type)} flex items-start gap-3 p-4 rounded-xl border text-sm`}
-                >
-                  <span className="text-lg">
-                    {rec.type === 'danger' ? '🚨' : rec.type === 'warning' ? '⚠️' : '✅'}
-                  </span>
-                  <div className="space-y-0.5">
-                    <p className="font-semibold text-xs uppercase tracking-wider">
-                      {rec.type === 'danger' ? 'CRITICAL ALERT' : rec.type === 'warning' ? 'ADVISORY WARNING' : 'OPTIMAL CONDITION'}
-                    </p>
-                    <p className="text-slate-600 text-sm mt-0.5 leading-relaxed font-normal">{rec.message}</p>
-                  </div>
+            {recommendations.map((rec, index) => (
+              <div
+                key={index}
+                className={`${getAlertClass(rec.type)} flex items-start gap-3 p-4 rounded-xl border text-sm`}
+              >
+                {getRecIcon(rec.type)}
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-xs uppercase tracking-wider">
+                    {rec.type === 'danger' ? 'Critical Alert' : rec.type === 'warning' ? 'Advisory Warning' : 'Optimal Condition'}
+                  </p>
+                  <p className="text-slate-600 text-sm mt-0.5 leading-relaxed font-normal">{rec.message}</p>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Right 1 Column: Quick Shortcuts */}
         <div className="card space-y-4">
           <h2 className="section-title border-b border-slate-100 pb-3">Quick Utilities</h2>
-          
+
           <div className="flex flex-col gap-3">
-            {/* View charts */}
             <button
               onClick={() => navigate(ROUTES.FARMER_SENSORS)}
-              className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-205 text-left transition-all group cursor-pointer"
+              className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-all group cursor-pointer"
             >
-              <span className="text-2xl">📈</span>
-              <div>
-                <p className="text-sm font-semibold text-emerald-700">Historical Charts</p>
-                <p className="text-xs text-slate-400 mt-0.5">Analyze NPK & Moisture trends</p>
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+                <FiBarChart2 className="w-4 h-4 text-blue-600" />
               </div>
-              <span className="ml-auto text-emerald-600 group-hover:translate-x-1 transition-transform">→</span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-blue-700">Historical Charts</p>
+                <p className="text-xs text-slate-400 mt-0.5">Analyze NPK and Moisture trends</p>
+              </div>
+              <FiChevronRight className="ml-auto text-slate-400 group-hover:translate-x-1 group-hover:text-blue-500 transition-all w-4 h-4 shrink-0" />
             </button>
 
-            {/* Check weather */}
             <button
               onClick={() => navigate(ROUTES.FARMER_WEATHER)}
-              className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-205 text-left transition-all group cursor-pointer"
+              className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-all group cursor-pointer"
             >
-              <span className="text-2xl">🌤️</span>
-              <div>
+              <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-200 flex items-center justify-center shrink-0">
+                <FiCloud className="w-4 h-4 text-cyan-600" />
+              </div>
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-cyan-700">Weather Intelligence</p>
                 <p className="text-xs text-slate-400 mt-0.5">View Afgoye local forecast</p>
               </div>
-              <span className="ml-auto text-cyan-600 group-hover:translate-x-1 transition-transform">→</span>
+              <FiChevronRight className="ml-auto text-slate-400 group-hover:translate-x-1 group-hover:text-cyan-500 transition-all w-4 h-4 shrink-0" />
             </button>
 
-            {/* AI diagnosis */}
             <button
               onClick={() => navigate(ROUTES.FARMER_DIAGNOSIS)}
-              className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-205 text-left transition-all group cursor-pointer"
+              className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-all group cursor-pointer"
             >
-              <span className="text-2xl">🤖</span>
-              <div>
-                <p className="text-sm font-semibold text-purple-700">AI Crop Diagnosis</p>
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+                <FiCpu className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-emerald-700">AI Crop Diagnosis</p>
                 <p className="text-xs text-slate-400 mt-0.5">Scan crop leaves for disease</p>
               </div>
-              <span className="ml-auto text-purple-600 group-hover:translate-x-1 transition-transform">→</span>
+              <FiChevronRight className="ml-auto text-slate-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all w-4 h-4 shrink-0" />
             </button>
           </div>
         </div>

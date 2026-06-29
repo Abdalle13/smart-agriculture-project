@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { 
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, 
-  Tooltip, CartesianGrid 
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
+  Tooltip, CartesianGrid
 } from 'recharts'
-import { mockGetSensorHistory } from '../../services/mockData'
+import api from '../../services/api'
+import { useAuth } from '../../contexts/AuthContext'
 import { SENSOR_CONFIG, SENSOR_THRESHOLDS } from '../../utils/constants'
+import { FiDownload } from 'react-icons/fi'
 
 // Custom tooltip renderer for Recharts
 const CustomTooltip = ({ active, payload, label, activeColor, unit }) => {
@@ -22,43 +24,46 @@ const CustomTooltip = ({ active, payload, label, activeColor, unit }) => {
 }
 
 export default function FarmerSensors() {
+  const { user } = useAuth()
   const [activeParam, setActiveParam] = useState('nitrogen')
   const [timeFilter, setTimeFilter] = useState(12) // hours
   const [historyData, setHistoryData] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const fetchHistory = async () => {
-    setLoading(true)
-    try {
-      const data = await mockGetSensorHistory(activeParam, timeFilter)
-      setHistoryData(data)
-    } catch (err) {
-      console.error('Error fetching sensor history:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const fetchHistory = async () => {
+      setLoading(true)
+      try {
+        const activeSensorId = user?.sensorIds?.[0] || 's001'
+        const { data: res } = await api.get(`/sensors/${activeSensorId}/history`, {
+          params: { parameter: activeParam, hours: timeFilter }
+        })
+        setHistoryData(res.data || [])
+      } catch (err) {
+        console.error('Error fetching sensor history:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchHistory()
-  }, [activeParam, timeFilter])
+  }, [user, activeParam, timeFilter])
 
   // CSV Exporter
   const handleExportCSV = () => {
     const config = SENSOR_CONFIG[activeParam]
     const unit = config?.unit || ''
-    
+
     // Header
     const csvRows = [['Report: AgriSense Telemetry Export'], ['Parameter', config.label], ['Time Period', `Last ${timeFilter} Hours`], [''], ['Timestamp', 'Value', 'Unit']]
-    
+
     // Rows
     historyData.forEach(row => {
       csvRows.push([row.time, row.value, unit])
     })
 
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + csvRows.map(e => e.map(val => `"${val}"`).join(",")).join("\n")
-    
+
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
     link.setAttribute("href", encodedUri)
@@ -73,7 +78,7 @@ export default function FarmerSensors() {
 
   return (
     <div className="page-container space-y-6">
-      
+
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -86,12 +91,12 @@ export default function FarmerSensors() {
           disabled={loading || historyData.length === 0}
           className="btn-primary self-start sm:self-auto py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          📥 Export CSV Log
+          <FiDownload className="w-4 h-4" /> Export CSV Log
         </button>
       </div>
 
       {/* ── Parameter Selection Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 md:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
         {Object.entries(SENSOR_CONFIG).map(([key, cfg]) => {
           const isActive = activeParam === key
           return (
@@ -99,19 +104,19 @@ export default function FarmerSensors() {
               key={key}
               onClick={() => setActiveParam(key)}
               className={`
-                p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between h-24
-                ${isActive 
-                  ? 'bg-emerald-50 border-emerald-500/40 shadow-sm' 
-                  : 'bg-white border-slate-200 hover:border-slate-350'}
+                p-3 sm:p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between h-20 sm:h-24
+                ${isActive
+                  ? 'bg-emerald-50 border-emerald-500/40 shadow-sm'
+                  : 'bg-white border-slate-200 hover:border-slate-300'}
               `}
             >
-              <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
+              <div
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center font-bold text-sm"
                 style={{ backgroundColor: `${cfg.color}15`, color: cfg.color }}
               >
                 {cfg.icon}
               </div>
-              <span className={`text-xs font-semibold mt-2 truncate ${isActive ? 'text-emerald-800' : 'text-slate-500'}`}>
+              <span className={`text-[10px] sm:text-xs font-semibold mt-2 truncate ${isActive ? 'text-emerald-800' : 'text-slate-500'}`}>
                 {cfg.label}
               </span>
             </button>
@@ -121,7 +126,7 @@ export default function FarmerSensors() {
 
       {/* ── Chart Section ── */}
       <div className="card space-y-6">
-        
+
         {/* Chart controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
@@ -134,21 +139,22 @@ export default function FarmerSensors() {
           {/* Time Filter Buttons */}
           <div className="flex bg-slate-100 border border-slate-200 p-1 rounded-xl self-start sm:self-auto">
             {[
-              { label: '12 Hours', value: 12 },
-              { label: '24 Hours', value: 24 },
-              { label: '7 Days', value: 168 }
+              { label: '12h', labelFull: '12 Hours', value: 12 },
+              { label: '24h', labelFull: '24 Hours', value: 24 },
+              { label: '7d',  labelFull: '7 Days',   value: 168 }
             ].map(tf => (
               <button
                 key={tf.value}
                 onClick={() => setTimeFilter(tf.value)}
                 className={`
-                  text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer
-                  ${timeFilter === tf.value 
-                    ? 'bg-emerald-600 text-white shadow-sm' 
+                  text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg transition-all cursor-pointer
+                  ${timeFilter === tf.value
+                    ? 'bg-emerald-600 text-white shadow-sm'
                     : 'text-slate-500 hover:text-emerald-700'}
                 `}
               >
-                {tf.label}
+                <span className="sm:hidden">{tf.label}</span>
+                <span className="hidden sm:inline">{tf.labelFull}</span>
               </button>
             ))}
           </div>
@@ -158,8 +164,8 @@ export default function FarmerSensors() {
         <div className="w-full h-80 relative">
           {loading ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <div className="w-8 h-8 border-3 border-emerald-700 border-t-emerald-400 rounded-full animate-spin" />
-              <p className="text-xs text-emerald-650 font-medium">Fetching history nodes...</p>
+              <div className="w-8 h-8 border-4 border-emerald-700 border-t-emerald-400 rounded-full animate-spin" />
+              <p className="text-xs text-emerald-600 font-medium">Fetching history nodes...</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -169,43 +175,43 @@ export default function FarmerSensors() {
               >
                 <defs>
                   <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={currentConfig.color} stopOpacity={0.25}/>
-                    <stop offset="95%" stopColor={currentConfig.color} stopOpacity={0}/>
+                    <stop offset="5%" stopColor={currentConfig.color} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={currentConfig.color} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis 
-                  dataKey="time" 
-                  stroke="#94a3b8" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false} 
+                <XAxis
+                  dataKey="time"
+                  stroke="#94a3b8"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
                 />
-                <YAxis 
-                  stroke="#94a3b8" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false} 
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
                   domain={[
-                    Math.max(0, currentThresholds.min - 10), 
+                    Math.max(0, currentThresholds.min - 10),
                     currentThresholds.max + 10
                   ]}
                 />
-                <Tooltip 
+                <Tooltip
                   content={
-                    <CustomTooltip 
-                      activeColor={currentConfig.color} 
-                      unit={currentConfig.unit} 
+                    <CustomTooltip
+                      activeColor={currentConfig.color}
+                      unit={currentConfig.unit}
                     />
-                  } 
+                  }
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke={currentConfig.color} 
-                  strokeWidth={2.5} 
-                  fillOpacity={1} 
-                  fill="url(#chartGradient)" 
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke={currentConfig.color}
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#chartGradient)"
                 />
               </AreaChart>
             </ResponsiveContainer>

@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import api from '../services/api'
-import { mockLogin } from '../services/mockData'
 import { STORAGE_KEYS, ROLES, ROUTES } from '../utils/constants'
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -34,24 +33,20 @@ export function AuthProvider({ children }) {
   // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(async (email, password) => {
     setError(null)
-    setLoading(true)
     try {
-      // Real API Integration
       const { data: res } = await api.post('/auth/login', { email, password })
       const newToken = res.token
-      const newUser = res.user
+      const newUser  = res.user
 
       localStorage.setItem(STORAGE_KEYS.TOKEN, newToken)
       localStorage.setItem(STORAGE_KEYS.USER,  JSON.stringify(newUser))
 
       setToken(newToken)
       setUser(newUser)
-      return newUser  // caller can use role for redirect
+      return newUser
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Login failed. Please try again.')
+      setError(err.response?.data?.message || 'Login failed. Please try again.')
       throw err
-    } finally {
-      setLoading(false)
     }
   }, [])
 

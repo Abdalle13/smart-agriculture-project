@@ -5,13 +5,13 @@ import { ROUTES, ROLES } from './utils/constants'
 // ── Lazy page imports (code-split per route) ──────────────────────────────────
 import LoginPage       from './pages/auth/LoginPage'
 import RegisterPage    from './pages/auth/RegisterPage'
-import ForgotPassword  from './pages/auth/ForgotPassword'
 
-import AdminLayout    from './layouts/AdminLayout'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminUsers     from './pages/admin/AdminUsers'
-import AdminSensors   from './pages/admin/AdminSensors'
-import AdminSystem    from './pages/admin/AdminSystem'
+import AdminLayout            from './layouts/AdminLayout'
+import AdminOverview          from './pages/admin/AdminOverview'
+import AdminFarmerManagement  from './pages/admin/AdminFarmerManagement'
+import AdminFieldNodes        from './pages/admin/AdminFieldNodes'
+import AdminDataMonitoring    from './pages/admin/AdminDataMonitoring'
+import AdminAIDiagnosis       from './pages/admin/AdminAIDiagnosis'
 
 import FarmerLayout    from './layouts/FarmerLayout'
 import FarmerDashboard from './pages/farmer/FarmerDashboard'
@@ -66,7 +66,6 @@ function AppRouter() {
       {/* ── Auth routes (public only) ── */}
       <Route path={ROUTES.LOGIN}           element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path={ROUTES.REGISTER}        element={<PublicRoute><RegisterPage /></PublicRoute>} />
-      <Route path={ROUTES.FORGOT_PASSWORD} element={<PublicRoute><ForgotPassword /></PublicRoute>} />
 
       {/* ── Admin routes ── */}
       <Route
@@ -78,10 +77,11 @@ function AppRouter() {
         }
       >
         <Route index element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="users"     element={<AdminUsers />} />
-        <Route path="sensors"   element={<AdminSensors />} />
-        <Route path="system"    element={<AdminSystem />} />
+        <Route path="dashboard"    element={<AdminOverview />} />
+        <Route path="users"        element={<AdminFarmerManagement />} />
+        <Route path="sensors"      element={<AdminFieldNodes />} />
+        <Route path="data-monitor" element={<AdminDataMonitoring />} />
+        <Route path="ai-diagnosis" element={<AdminAIDiagnosis />} />
       </Route>
 
       {/* ── Farmer routes ── */}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FiCamera, FiSearch, FiCpu, FiInfo, FiZoomIn, FiFile } from 'react-icons/fi'
 import { mockDiagnoseImage } from '../../services/mockData'
 
 export default function FarmerDiagnosis() {
@@ -94,7 +95,7 @@ export default function FarmerDiagnosis() {
             {previewUrl && !scanning && (
               <button 
                 onClick={triggerReset}
-                className="text-xs text-red-650 hover:text-red-700 font-semibold transition-colors cursor-pointer"
+                className="text-xs text-red-600 hover:text-red-700 font-semibold transition-colors cursor-pointer"
               >
                 Clear Image
               </button>
@@ -104,8 +105,8 @@ export default function FarmerDiagnosis() {
           <form onSubmit={handleUploadSubmit} className="space-y-4 flex-1 flex flex-col justify-between">
             {!previewUrl ? (
               // Empty state dropzone
-              <label className="flex-1 min-h-[220px] flex flex-col items-center justify-center border-2 border-dashed border-slate-350 hover:border-emerald-500/50 rounded-2xl p-6 bg-slate-50 hover:bg-slate-100/50 transition-all cursor-pointer group">
-                <span className="text-5xl group-hover:scale-110 transition-transform">📸</span>
+              <label className="flex-1 min-h-[220px] flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-emerald-500/50 rounded-2xl p-6 bg-slate-50 hover:bg-slate-100/50 transition-all cursor-pointer group">
+                <FiCamera className="w-12 h-12 text-slate-400 group-hover:text-emerald-500 group-hover:scale-110 transition-all" />
                 <p className="text-sm font-semibold text-slate-700 mt-4">Select leaf photo or take a picture</p>
                 <p className="text-xs text-slate-400 mt-1">Supports JPEG, PNG up to 10MB</p>
                 <input 
@@ -126,7 +127,7 @@ export default function FarmerDiagnosis() {
                 
                 {/* Visual scanning green overlay line */}
                 {scanning && (
-                  <div className="absolute inset-0 bg-gradient-to-b from-emerald-550/0 via-emerald-550/20 to-emerald-550/0 h-10 w-full animate-pulse-slow border-y border-emerald-500/30 pointer-events-none" 
+                  <div className="absolute inset-0 bg-emerald-500/20 h-10 w-full animate-pulse-slow border-y border-emerald-500/30 pointer-events-none"
                        style={{ animationDuration: '1.5s', animationIterationCount: 'infinite' }} />
                 )}
               </div>
@@ -158,7 +159,7 @@ export default function FarmerDiagnosis() {
                 disabled={!selectedFile}
                 className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                🔍 Analyze Crop Health
+                <FiSearch className="w-4 h-4" /> Analyze Crop Health
               </button>
             )}
           </form>
@@ -170,7 +171,7 @@ export default function FarmerDiagnosis() {
           
           {scanning ? (
             <div className="min-h-[250px] flex flex-col items-center justify-center gap-3 text-center">
-              <span className="text-4xl animate-bounce">🧬</span>
+              <FiCpu className="w-10 h-10 text-emerald-600 animate-pulse" />
               <p className="text-sm font-semibold text-emerald-700">Classifying patterns...</p>
               <p className="text-xs text-slate-500 max-w-xs">AI is comparing color histograms and leaf lesions against reference datasets</p>
             </div>
@@ -179,7 +180,7 @@ export default function FarmerDiagnosis() {
             <div className="space-y-4 animate-fade-in">
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-450 font-mono">Model: {result.modelUsed}</span>
+                  <span className="text-xs text-slate-500 font-mono">Model: {result.modelUsed}</span>
                   {getSeverityBadge(result.severity)}
                 </div>
                 <div>
@@ -195,9 +196,9 @@ export default function FarmerDiagnosis() {
               {/* Treatment Advisory */}
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
                 <h4 className="text-sm font-semibold text-emerald-800 flex items-center gap-1.5">
-                  <span>💡</span> Agronomic Treatment Advisory
+                  <FiInfo className="w-4 h-4" /> Agronomic Treatment Advisory
                 </h4>
-                <p className="text-xs text-slate-650 leading-relaxed font-normal">
+                <p className="text-xs text-slate-600 leading-relaxed font-normal">
                   {result.treatment}
                 </p>
               </div>
@@ -212,7 +213,7 @@ export default function FarmerDiagnosis() {
           ) : (
             // Empty placeholder state
             <div className="min-h-[250px] flex flex-col items-center justify-center gap-2 text-center text-slate-400">
-              <span className="text-5xl">🔬</span>
+              <FiZoomIn className="w-12 h-12 text-slate-300" />
               <p className="text-sm font-semibold mt-3 text-slate-600">Ready for analysis</p>
               <p className="text-xs max-w-xs leading-relaxed">Select a leaf photograph on the left and submit it to the deep-learning classifier.</p>
             </div>
@@ -244,7 +245,7 @@ export default function FarmerDiagnosis() {
                     {new Date(log.analyzedAt).toLocaleDateString()} {new Date(log.analyzedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="py-3 px-2 font-semibold text-slate-500 text-xs">
-                    📁 {log.fileName || 'analyzed_sample.jpg'}
+                    <span className="inline-flex items-center gap-1"><FiFile className="w-3 h-3 flex-shrink-0" />{log.fileName || 'analyzed_sample.jpg'}</span>
                   </td>
                   <td className="py-3 px-2 font-semibold text-slate-800">{log.diagnosis}</td>
                   <td className="py-3 px-2 font-bold font-mono text-emerald-700">
@@ -253,7 +254,7 @@ export default function FarmerDiagnosis() {
                   <td className="py-3 px-2">
                     {getSeverityBadge(log.severity)}
                   </td>
-                  <td className="py-3 px-2 text-slate-450 font-mono text-xs">{log.modelUsed}</td>
+                  <td className="py-3 px-2 text-slate-500 font-mono text-xs">{log.modelUsed}</td>
                 </tr>
               ))}
             </tbody>
