@@ -1,78 +1,88 @@
-# 🌾 Integrated Smart Agriculture Web System
-### Afgoye District — Precision Farming Platform
+# AgriSense — Smart Agriculture Platform
+### Afgoye District, Somalia · IoT Soil Monitoring System
 
 ---
 
 ## Overview
 
-A full-stack, modular web platform connecting IoT soil sensors, weather intelligence, and AI-powered crop disease diagnosis to empower farmers in the **Afgoye district** with data-driven decisions.
+A full-stack MERN web platform connecting ESP32 soil probe hardware to a real-time farmer dashboard and admin control panel. Farmers in the **Afgoye district** can monitor live NPK, temperature, humidity, and soil moisture readings from their fields.
 
 ---
 
 ## System Architecture
 
 ```
-smart-agriculture-project/          ← Monorepo Root
-├── frontend/                       ← React.js + Tailwind CSS (Port: 5173)
-├── backend/                        ← Node.js + Express.js + MongoDB (Port: 5000)
-├── ai-service/                     ← FastAPI Python Microservice (Port: 8000)
+smart-agriculture-project/
+├── frontend/        React 19 + Vite + Tailwind CSS      (Port: 5173)
+├── backend/         Node.js + Express + MongoDB          (Port: 5000)
+├── iot/             ESP32 Arduino sketch (C++)
 └── README.md
 ```
-
----
-
-## Core Pillars
-
-| Pillar | Technology | Status |
-|--------|-----------|--------|
-| 📡 IoT Soil Monitoring | Node.js + MongoDB + WebSocket | 🟡 Mocked |
-| 🌤️ Weather Intelligence | OpenWeatherMap API | 🟡 Mocked |
-| 🤖 Crop Disease Diagnosis | FastAPI + CNN/SVM/RF | 🟡 Mocked |
-
----
-
-## User Roles (RBAC)
-
-| Role | Access Level |
-|------|-------------|
-| **Admin** | Full system access, user management, system-wide overview & sensor health |
-| **Farmer** | Personalized field dashboard, sensor readings, weather forecasts, crop diagnosis |
 
 ---
 
 ## Tech Stack
 
 ### Frontend
-- **Framework:** React.js (Vite)
-- **Styling:** Tailwind CSS
-- **Routing:** React Router v6
-- **Charts:** Recharts
-- **HTTP Client:** Axios
+- React 19 (Vite)
+- Tailwind CSS with custom emerald theme
+- React Router v6 — role-based routing (admin / farmer)
+- Recharts — sensor telemetry charts
+- Axios — HTTP client with JWT auto-attach
+- Socket.io-client — real-time live updates
 
 ### Backend
-- **Runtime:** Node.js
-- **Framework:** Express.js
-- **Database:** MongoDB (via Mongoose ODM)
-- **Auth:** JWT (JSON Web Tokens)
-- **Password Hashing:** bcryptjs
+- Node.js + Express.js
+- MongoDB + Mongoose ODM
+- JWT authentication + bcryptjs
+- Socket.io — WebSocket server for real-time push
+- OpenWeatherMap API proxy (Afgoye coords)
 
-### AI Microservice
-- **Framework:** FastAPI (Python)
-- **ML Models:** CNN / SVM / Random Forest *(integration pending)*
-- **Image Processing:** Pillow / OpenCV
+### IoT Hardware (ESP32)
+- DHT11 on pin 14 — temperature + air humidity
+- Analog soil moisture sensor on pin 34
+- NPK sensor via RS485 Modbus (UART2: RX=16, TX=17, DE=19, RE=4)
+- Posts to `POST /sensor` every 30 seconds
 
 ---
 
-## Monitored Parameters (IoT)
+## Monitored Parameters
 
-| Parameter | Unit | Sensor Type |
-|-----------|------|-------------|
-| Nitrogen (N) | mg/kg | NPK Sensor |
-| Phosphorus (P) | mg/kg | NPK Sensor |
-| Potassium (K) | mg/kg | NPK Sensor |
-| Soil Temperature | °C | DS18B20 |
-| Soil Humidity | % | Capacitive |
-| Soil pH | pH units | pH Probe |
+| Parameter | Unit | Sensor |
+|---|---|---|
+| Nitrogen (N) | mg/kg | NPK RS485 Modbus |
+| Phosphorus (P) | mg/kg | NPK RS485 Modbus |
+| Potassium (K) | mg/kg | NPK RS485 Modbus |
+| Temperature | °C | DHT11 |
+| Air Humidity | % | DHT11 |
+| Soil Moisture | % | Analog capacitive |
+
+---
+
+## User Roles
+
+| Role | Access |
+|---|---|
+| **Admin** | System overview, user management, sensor registry, data monitoring |
+| **Farmer** | Field dashboard, telemetry charts, weather, AI crop diagnosis |
+
+Default seeded accounts (`node seed.js`):
+- Admin: `admin@agrisense.io` / `admin123`
+- Farmer: `abdalle@agrisense.io` / `abdalle123`
+
+---
+
+## Real-Time Data Flow
+
+```
+ESP32 (every 30s)
+    ↓ POST /sensor
+Backend saves to MongoDB
+    ↓ io.emit('newReading')
+Socket.io pushes to all connected browsers
+    ↓ socket.on('newReading')
+Farmer dashboard cards update instantly
+```
 
 ---
 
@@ -80,56 +90,75 @@ smart-agriculture-project/          ← Monorepo Root
 
 ### Prerequisites
 - Node.js >= 18.x
-- Python >= 3.10
 - MongoDB (local or Atlas)
 - npm >= 9.x
 
-### Running the Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Running the Backend
+### Backend
 ```bash
 cd backend
 npm install
 npm run dev
 ```
 
-### Running the AI Service
+### Frontend
 ```bash
-cd ai-service
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+cd frontend
+npm install
+npm run dev
+```
+
+### Seed default accounts
+```bash
+cd backend
+node seed.js               # create admin + farmer accounts
+node seed.js --clear-readings  # wipe all sensor telemetry (keep accounts)
+node seed.js --clear           # wipe everything (users + sensors + readings)
 ```
 
 ---
 
 ## Environment Variables
 
-Each service uses a `.env` file. See `.env.example` in each service folder.
+`backend/.env`:
+```
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/agrisense
+JWT_SECRET=super_secret_agrisense_key_2026
+NODE_ENV=development
+OPENWEATHER_API_KEY=<your key>
+FRONTEND_URL=http://localhost:5173
+```
 
-> ⚠️ **Never commit `.env` files to version control.**
-
----
-
-## Integration Roadmap
-
-- [ ] Connect real IoT hardware (MQTT/HTTP)
-- [ ] Integrate OpenWeatherMap live API
-- [ ] Deploy trained CNN model to FastAPI
-- [ ] Add SMS/Push notification alerts for critical sensor thresholds
-- [ ] Deploy to cloud (Railway / Render / AWS)
-
----
-
-## Team
-
-> Built for the Afgoye district farming community.
-> Hardware & ML Dataset team integration pending.
+`frontend/.env` (optional):
+```
+VITE_API_URL=http://localhost:5000/api
+VITE_AI_URL=http://localhost:8000
+```
 
 ---
 
-*Last updated: May 2026*
+## IoT Setup
+
+1. Open `iot/esp32/esp32.ino` in Arduino IDE
+2. Set `serverName` to your machine's local IPv4 address
+3. Flash to ESP32
+4. Probe posts readings every 30 seconds to `POST /sensor`
+
+> Data is auto-deleted after **30 days** via MongoDB TTL index.
+
+---
+
+## Roadmap
+
+- [x] JWT role-based auth (admin / farmer)
+- [x] Real-time WebSocket updates via Socket.io
+- [x] ESP32 hardware integration
+- [x] OpenWeatherMap weather proxy
+- [x] Agronomic recommendation engine
+- [ ] AI crop disease diagnosis (CNN model — pending)
+- [ ] SMS/push alerts for critical thresholds
+- [ ] Cloud deployment (Railway / Render)
+
+---
+
+*AgriSense v1.0 · Afgoye District, Somalia*

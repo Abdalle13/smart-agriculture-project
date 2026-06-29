@@ -1,45 +1,19 @@
 import mongoose from 'mongoose'
 
-const sensorSchema = new mongoose.Schema(
-  {
-    _id: {
-      type: String, // using custom string code like 's001', 's002' as the primary key
-      required: [true, 'Please add a sensor ID code'],
-    },
-    name: {
-      type: String,
-      required: [true, 'Please add a sensor name'],
-      trim: true,
-    },
-    farmerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      default: null,
-    },
-    location: {
-      type: String,
-      required: [true, 'Please add a location/plot details'],
-    },
-    status: {
-      type: String,
-      enum: ['online', 'warning', 'offline'],
-      default: 'online',
-    },
-    battery: {
-      type: Number,
-      min: 0,
-      max: 100,
-      default: 100,
-    },
-    lastSeen: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-  {
-    timestamps: true,
-    _id: false, // disable automatic ObjectId generation for schema root since we use _id as string code
-  }
-)
+// Sensor Model — kaydinaya xogta telemetry-da ESP32 soo dirto
+const sensorSchema = new mongoose.Schema({
+  sensorId:    { type: String, index: true },  // ID-da aalada (s001, s002...)
+  temperature: { type: Number },
+  humidity:    { type: Number },
+  moisture:    { type: Number },
+  nitrogen:    { type: Number },
+  phosphorus:  { type: Number },
+  potassium:   { type: Number },
+  timestamp:   { type: Date, default: Date.now },
+  createdAt:   { type: Date, default: Date.now },
+})
+
+// Auto-delete readings older than 30 days
+sensorSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 })
 
 export default mongoose.model('Sensor', sensorSchema)

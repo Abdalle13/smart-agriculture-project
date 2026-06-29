@@ -3,28 +3,33 @@ import {
   getSensors,
   registerSensor,
   decommissionSensor,
-  toggleSensorStatus,
+  updateSensor,
   getLatestReadings,
   getSensorHistory,
-  addReading
-} from '../controllers/sensorController.js'
+  addReading,
+  getAllReadings
+} from '../controllers/sensorRegisterController.js'
 import { protect, authorize } from '../middleware/auth.js'
 
 const router = express.Router()
 
-// IoT hardware data submission route (Public API endpoint)
+// IoT hardware data submission route (Public — no auth needed)
 router.post('/readings', addReading)
 
-// Client routes
+// Admin: all readings
+router.route('/readings/all')
+  .get(protect, authorize('admin'), getAllReadings)
+
+// All sensors (admin sees all, farmer sees only theirs)
 router.route('/')
   .get(protect, getSensors)
   .post(protect, authorize('admin'), registerSensor)
 
+// Specific sensor node actions
 router.route('/:id')
   .delete(protect, authorize('admin'), decommissionSensor)
+  .patch(protect, authorize('admin'), updateSensor)
 
-router.route('/:id/status')
-  .patch(protect, authorize('admin'), toggleSensorStatus)
 
 router.route('/:id/latest')
   .get(protect, getLatestReadings)

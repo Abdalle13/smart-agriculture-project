@@ -43,6 +43,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isApproved: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -50,14 +54,12 @@ const userSchema = new mongoose.Schema(
 )
 
 // Encrypt password using bcrypt — only re-hash when password field is actually changed
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next()   // ← CRITICAL: must return to stop execution here
-  }
+// Note: async middleware in Mongoose 7+ must NOT call next() — promise is handled automatically
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return
 
   const salt = await bcrypt.genSalt(10)
   this.password = await bcrypt.hash(this.password, salt)
-  next()
 })
 
 // Match user entered password to hashed password in database

@@ -1,4 +1,4 @@
-// ─── Weather Controller ───────────────────────────────────────────────────────
+// Weather Controller
 // Fetches live weather data from OpenWeatherMap API for Afgoye, Somalia.
 // Falls back to realistic mock data if API key is not configured.
 
@@ -30,18 +30,15 @@ const getWeatherIcon = (code) => {
 export const getWeather = async (req, res) => {
   const apiKey = process.env.OPENWEATHER_API_KEY
 
-  // Require API key for production
   if (!apiKey || apiKey === 'your_openweather_api_key_here' || apiKey === '') {
-    console.error('⚠️  OPENWEATHER_API_KEY not set in environment variables.')
-    return res.status(400).json({ success: false, message: 'OpenWeather API key is not configured' })
+    return res.status(500).json({ success: false, message: 'OpenWeather API key is not configured on the server.' })
   }
 
   try {
-    // Parallel fetch: current weather + 5-day forecast + UV index
-    const [currentRes, forecastRes, uviRes] = await Promise.all([
+    // Parallel fetch: current weather + 5-day forecast
+    const [currentRes, forecastRes] = await Promise.all([
       fetch(`${OWM_BASE}/weather?lat=${AFGOYE_LAT}&lon=${AFGOYE_LON}&appid=${apiKey}&units=metric`),
       fetch(`${OWM_BASE}/forecast?lat=${AFGOYE_LAT}&lon=${AFGOYE_LON}&appid=${apiKey}&units=metric&cnt=40`),
-      fetch(`${OWM_BASE}/uvi?lat=${AFGOYE_LAT}&lon=${AFGOYE_LON}&appid=${apiKey}`),
     ])
 
     if (!currentRes.ok) {
@@ -55,7 +52,6 @@ export const getWeather = async (req, res) => {
 
     const current  = await currentRes.json()
     const forecast = await forecastRes.json()
-    const uvi      = uviRes.ok ? await uviRes.json() : { value: 0 }
 
     // ── Build 5-day daily forecast (aggregate daily min/max/rain, pick midday for condition) ──
     const dailyForecasts = {}
@@ -118,13 +114,9 @@ export const getWeather = async (req, res) => {
 
     // ── Build smart weather alerts ──
     const alerts = []
-    const uvValue     = Math.round(uvi.value || 0)
-    const windKmh     = Math.round((current.wind?.speed || 0) * 3.6)
+    const windKmh      = Math.round((current.wind?.speed || 0) * 3.6)
     const rainTomorrow = forecastDays[1]?.rain || 0
 
-    if (uvValue >= 8) {
-      alerts.push({ type: 'warning', message: `High UV index (${uvValue}/11) forecast today. Protect young crops and irrigate before 9AM.` })
-    }
     if (windKmh > 35) {
       alerts.push({ type: 'warning', message: `Strong winds (${windKmh} km/h). Secure lightweight irrigation equipment and crop covers.` })
     }
@@ -144,7 +136,6 @@ export const getWeather = async (req, res) => {
           windSpeed:   windKmh,
           description: currentDesc.charAt(0).toUpperCase() + currentDesc.slice(1),
           icon:        getWeatherIcon(current.weather[0].id),
-          uvIndex:     uvValue,
           visibility:  parseFloat(((current.visibility || 10000) / 1000).toFixed(1)),
         },
         forecast:  forecastDays,
@@ -154,10 +145,6 @@ export const getWeather = async (req, res) => {
     })
   } catch (error) {
     console.error('❌ OpenWeatherMap API Error:', error.message)
-    // Return a 500 server error instead of serving mock data
-    res.status(500).json({
-      success: false,
-      message: 'Live weather API unavailable.',
-    })
+    return res.status(500).json({ success: false, message: 'Weather service temporarily unavailable.' })
   }
 }
