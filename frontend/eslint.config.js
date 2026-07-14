@@ -17,5 +17,10 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Targets React Compiler codegen; flags the standard fetch-on-mount
+      // pattern (useEffect(() => { fetchData() }, [])) used throughout this app.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

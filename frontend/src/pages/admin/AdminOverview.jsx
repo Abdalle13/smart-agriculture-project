@@ -121,9 +121,11 @@ export default function AdminOverview() {
   const [stats,   setStats]   = useState(null)
   const [loading, setLoading] = useState(true)
   const [pending,    setPending]    = useState(0)
+  const [fetchError, setFetchError] = useState(false)
 
   const fetchData = async () => {
     setLoading(true)
+    setFetchError(false)
     try {
       const [sRes, uRes, rRes] = await Promise.all([
         api.get('/sensors'),
@@ -136,8 +138,8 @@ export default function AdminOverview() {
       const allReadings = rRes.data.data   || []
 
       const farmerList = allUsers.filter(u => u.role === 'farmer')
-      const active     = farmerList.filter(u => u.isActive && u.isApproved).length
-      const pend       = allUsers.filter(u => !u.isApproved).length
+      const active     = farmerList.filter(u => u.isApproved).length
+      const pend       = farmerList.filter(u => !u.isApproved).length
 
       setPending(pend)
       setFarmers(farmerList)
@@ -150,6 +152,7 @@ export default function AdminOverview() {
       })
     } catch (err) {
       console.error('Dashboard fetch error:', err)
+      setFetchError(true)
     } finally {
       setLoading(false)
     }
@@ -192,6 +195,19 @@ export default function AdminOverview() {
           <FiRefreshCw size={13} /> Refresh
         </button>
       </div>
+
+      {/* ── Fetch error banner ──────────────────────────────────────────────── */}
+      {fetchError && (
+        <div className="flex items-center justify-between gap-3 p-4 rounded-xl border bg-red-50 border-red-200 text-red-700 text-sm">
+          <div className="flex items-center gap-2">
+            <FiActivity size={15} className="shrink-0 text-red-500" />
+            <span className="font-semibold">Failed to load dashboard data. Check server connection.</span>
+          </div>
+          <button onClick={fetchData} className="shrink-0 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors">
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* ── Stats Strip ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3">

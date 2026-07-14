@@ -23,10 +23,14 @@ export default function FarmerDashboard() {
 
   // Load latest reading once on mount
   useEffect(() => {
+    const activeSensorId = user?.sensorIds?.[0]
+    if (!activeSensorId) {
+      setLoading(false)
+      return
+    }
     const fetchLatest = async () => {
       try {
         setError(null)
-        const activeSensorId = user?.sensorIds?.[0] || 's001'
         const { data: res } = await api.get(`/sensors/${activeSensorId}/latest`)
         if (res.data) {
           setReadings(res.data)
@@ -44,17 +48,25 @@ export default function FarmerDashboard() {
 
   // Real-time updates via Socket.io
   useEffect(() => {
+    const sensorId = user?.sensorIds?.[0]
+    if (!sensorId) return
+
     const socket = io(SOCKET_URL, { transports: ['websocket'] })
+
+    socket.on('connect', () => {
+      socket.emit('joinSensor', sensorId)
+    })
 
     socket.on('newReading', (data) => {
       setReadings(data)
       setRecommendations(getSoilRecommendations(data))
       setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
       setError(null)
+      setLoading(false)
     })
 
     return () => socket.disconnect()
-  }, [])
+  }, [user])
 
   if (loading) {
     return (
@@ -124,6 +136,17 @@ export default function FarmerDashboard() {
           }
         </div>
       </div>
+
+      {/* ── No sensor assigned banner ── */}
+      {!user?.sensorIds?.length && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 text-sm">
+          <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+          <div>
+            <p className="font-semibold">No field node assigned to your account</p>
+            <p className="text-amber-600 text-xs mt-0.5 font-normal">Contact your administrator to assign an IoT sensor probe to your farm.</p>
+          </div>
+        </div>
+      )}
 
       {/* ── Error banner ── */}
       {error && (

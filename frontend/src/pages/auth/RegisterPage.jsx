@@ -33,7 +33,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
-    if (!name || !email || !password || !confirmPassword || !fieldName || !location) {
+    if (!name.trim() || !email || !password || !confirmPassword || !fieldName.trim() || !location.trim()) {
       setError('Please fill in all fields.')
       return
     }
@@ -104,12 +104,6 @@ export default function RegisterPage() {
                     <img src={logo} alt="AgriSense" className="relative w-20 h-20 rounded-2xl shadow-lg shadow-emerald-500/25" />
                   </div>
                   <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">AgriSense</h1>
-                  <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">
-                      Afgoye District · Somalia
-                    </span>
-                  </div>
                 </div>
 
                 {/* ── Divider ── */}
@@ -270,7 +264,6 @@ export default function RegisterPage() {
                       Sign In here
                     </Link>
                   </p>
-                  <p className="text-xs text-slate-400 font-mono">AgriSense v1.0 · Afgoye District</p>
                 </div>
               </>
             )}

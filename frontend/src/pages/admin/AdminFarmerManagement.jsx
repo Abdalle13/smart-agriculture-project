@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   FiSearch, FiUserPlus, FiEdit2, FiMapPin,
-  FiUsers, FiUserCheck, FiClock, FiUserX,
-  FiRadio, FiCheck, FiX, FiAlertTriangle
+  FiUsers, FiUserCheck, FiClock,
+  FiRadio, FiCheck, FiX, FiAlertTriangle, FiTrash2
 } from 'react-icons/fi'
 import api from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
@@ -89,17 +89,12 @@ function UserForm({ editTarget, currentUserId, onSave, onClose }) {
           role:      editTarget.role      || 'farmer',
           fieldName: editTarget.fieldName || '',
           location:  editTarget.location  || '',
-          sensorId:  (editTarget.sensorIds || [])[0] || '',
         }
-      : { name: '', email: '', password: '', role: 'farmer', fieldName: '', location: 'Afgoye, Somalia', sensorId: '' }
+      : { name: '', email: '', password: '', role: 'farmer', fieldName: '', location: 'Afgoye, Somalia' }
   )
-  const [sensors, setSensors] = useState([])
   const [saving,  setSaving]  = useState(false)
   const [errors,  setErrors]  = useState({})
 
-  useEffect(() => {
-    api.get('/sensors').then(res => setSensors(res.data.data || [])).catch(() => {})
-  }, [])
 
   const set = (k, v) => {
     setForm(f => ({ ...f, [k]: v }))
@@ -127,7 +122,6 @@ function UserForm({ editTarget, currentUserId, onSave, onClose }) {
         role:      form.role,
         fieldName: form.fieldName.trim(),
         location:  form.location.trim(),
-        sensorIds: form.sensorId ? [form.sensorId] : [],
       }
       if (form.password) payload.password = form.password
       const res = isEdit
@@ -193,16 +187,6 @@ function UserForm({ editTarget, currentUserId, onSave, onClose }) {
           </Field>
         </div>
 
-        <Field label="Assign Field Node">
-          <select value={form.sensorId} onChange={e => set('sensorId', e.target.value)}
-            className={`${inputCls} border-slate-200 cursor-pointer`}>
-            <option value="">— No sensor assigned —</option>
-            {sensors.map(s => (
-              <option key={s._id} value={s._id}>{s.name || s._id}</option>
-            ))}
-          </select>
-        </Field>
-
         {errors.submit && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 flex items-start gap-2">
             <FiAlertTriangle size={14} className="mt-0.5 shrink-0" />
@@ -229,7 +213,6 @@ function UserForm({ editTarget, currentUserId, onSave, onClose }) {
 export default function AdminFarmerManagement() {
   const { user: currentUser } = useAuth()
   const [users,        setUsers]        = useState([])
-  const [allSensors,   setAllSensors]   = useState([])
   const [loading,      setLoading]      = useState(true)
   const [searchTerm,   setSearchTerm]   = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -237,7 +220,8 @@ export default function AdminFarmerManagement() {
   const [showCreate,   setShowCreate]   = useState(false)
   const [editTarget,   setEditTarget]   = useState(null)
   const [toast,        setToast]        = useState(null)
-  const [togglingId,   setTogglingId]   = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting,     setDeleting]     = useState(false)
 
   const showToast = (message, type = 'success') => setToast({ message, type })
 
@@ -253,27 +237,32 @@ export default function AdminFarmerManagement() {
       }
     }
     fetchUsers()
-    api.get('/sensors').then(res => setAllSensors(res.data.data || [])).catch(() => {})
   }, [])
 
-  const handleToggle = async (userId) => {
-    if (userId === currentUser._id) {
-      showToast('You cannot change your own account status.', 'error')
-      return
-    }
-    setTogglingId(userId)
+  const handleToggleApproval = async (userId) => {
     try {
       const { data } = await api.put(`/auth/users/${userId}/status`)
       if (data.success) {
-        setUsers(prev => prev.map(u =>
-          u._id === userId ? { ...u, isActive: data.user.isActive, isApproved: data.user.isApproved } : u
-        ))
-        showToast(data.user.isActive ? 'Account activated successfully.' : 'Account deactivated.')
+        setUsers(prev => prev.map(u => u._id === userId ? { ...u, isApproved: data.user.isApproved } : u))
+        showToast(data.user.isApproved ? 'Account approved.' : 'Account approval revoked.')
       }
     } catch (err) {
-      showToast(err.response?.data?.message || 'Error updating status', 'error')
+      showToast(err.response?.data?.message || 'Failed to update approval.', 'error')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await api.delete(`/auth/users/${deleteTarget._id}`)
+      setUsers(prev => prev.filter(u => u._id !== deleteTarget._id))
+      showToast(`${deleteTarget.name} has been removed.`)
+      setDeleteTarget(null)
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to delete user.', 'error')
     } finally {
-      setTogglingId(null)
+      setDeleting(false)
     }
   }
 
@@ -298,24 +287,48 @@ export default function AdminFarmerManagement() {
       (u.location  || '').toLowerCase().includes(q)
     const matchStatus =
       statusFilter === 'all' ||
-      (statusFilter === 'active'   && u.isActive && u.isApproved) ||
-      (statusFilter === 'pending'  && !u.isApproved) ||
-      (statusFilter === 'inactive' && u.isApproved && !u.isActive)
+      (statusFilter === 'active'  && u.isApproved) ||
+      (statusFilter === 'pending' && !u.isApproved)
     const matchRole = roleFilter === 'all' || u.role === roleFilter
     return matchSearch && matchStatus && matchRole
   })
 
   const totalFarmers = users.filter(u => u.role === 'farmer').length
   const totalAdmins  = users.filter(u => u.role === 'admin').length
-  const active       = users.filter(u => u.isActive && u.isApproved).length
+  const active       = users.filter(u => u.isApproved).length
   const pending      = users.filter(u => !u.isApproved).length
-  const inactive     = users.filter(u => u.isApproved && !u.isActive).length
   const isSelf       = (uid) => uid === currentUser?._id
 
   return (
     <div className="page-container space-y-7">
 
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
+
+      {/* ── Delete Confirmation Modal ── */}
+      {deleteTarget && (
+        <Modal title="Remove Farmer Account" onClose={() => setDeleteTarget(null)}>
+          <div className="space-y-4">
+            <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
+              <p className="text-sm font-semibold text-red-800">
+                Remove <span className="font-black">{deleteTarget.name}</span>?
+              </p>
+              <p className="text-xs text-red-500 mt-1 leading-relaxed">
+                This permanently deletes the account and cannot be undone. Sensor assignments will be removed.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 cursor-pointer transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleDelete} disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold text-sm cursor-pointer transition-colors">
+                {deleting ? 'Removing…' : 'Yes, Remove'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {showCreate && (
         <UserForm currentUserId={currentUser?._id} onSave={handleSave} onClose={() => setShowCreate(false)} />
@@ -339,12 +352,11 @@ export default function AdminFarmerManagement() {
       </div>
 
       {/* ── Stats ──────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total Users',      value: users.length, Icon: FiUsers,     iconColor: 'text-slate-500',   iconBg: 'bg-slate-100 border-slate-200',   valColor: 'text-slate-800'   },
-          { label: 'Active',           value: active,       Icon: FiUserCheck, iconColor: 'text-emerald-600', iconBg: 'bg-emerald-50 border-emerald-200', valColor: 'text-emerald-700' },
-          { label: 'Pending',          value: pending,      Icon: FiClock,     iconColor: 'text-amber-600',   iconBg: 'bg-amber-50 border-amber-200',     valColor: 'text-amber-700'   },
-          { label: 'Inactive',         value: inactive,     Icon: FiUserX,     iconColor: 'text-slate-400',   iconBg: 'bg-slate-100 border-slate-200',    valColor: 'text-slate-500'   },
+          { label: 'Total Users', value: users.length, Icon: FiUsers,     iconColor: 'text-slate-500',   iconBg: 'bg-slate-100 border-slate-200',   valColor: 'text-slate-800'   },
+          { label: 'Approved',    value: active,       Icon: FiUserCheck, iconColor: 'text-emerald-600', iconBg: 'bg-emerald-50 border-emerald-200', valColor: 'text-emerald-700' },
+          { label: 'Pending',     value: pending,      Icon: FiClock,     iconColor: 'text-amber-600',   iconBg: 'bg-amber-50 border-amber-200',     valColor: 'text-amber-700'   },
         ].map(s => (
           <div key={s.label} className="bg-white border border-slate-200 rounded-2xl px-3 py-3 sm:px-5 sm:py-4 flex items-center gap-2 sm:gap-4 shadow-sm">
             <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center ${s.iconBg} ${s.iconColor} shrink-0`}>
@@ -373,9 +385,8 @@ export default function AdminFarmerManagement() {
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200 cursor-pointer">
           <option value="all">All Statuses</option>
-          <option value="active">Active Only</option>
+          <option value="active">Approved</option>
           <option value="pending">Pending Approval</option>
-          <option value="inactive">Inactive Only</option>
         </select>
         <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
           className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200 cursor-pointer">
@@ -469,14 +480,11 @@ export default function AdminFarmerManagement() {
                     <td className="py-3.5 px-5">
                       {u.sensorIds?.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                          {u.sensorIds.map(sid => {
-                            const node = allSensors.find(n => n._id === sid)
-                            return (
-                              <span key={sid} className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 rounded-lg border border-emerald-200 text-emerald-700 text-[11px] font-semibold">
-                                <FiRadio size={9} /> {node?.name || sid}
-                              </span>
-                            )
-                          })}
+                          {u.sensorIds.map(sid => (
+                            <span key={sid} className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 rounded-lg border border-emerald-200 text-emerald-700 text-[11px] font-semibold font-mono">
+                              <FiRadio size={9} /> {sid}
+                            </span>
+                          ))}
                         </div>
                       ) : (
                         <span className="text-slate-300 text-xs italic">Unassigned</span>
@@ -493,17 +501,13 @@ export default function AdminFarmerManagement() {
                     {/* Status */}
                     <td className="py-3.5 px-5">
                       <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border whitespace-nowrap
-                        ${!u.isApproved
-                          ? 'bg-amber-50 text-amber-700 border-amber-200'
-                          : u.isActive
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-slate-50 text-slate-500 border-slate-200'
+                        ${u.isApproved
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
                         }`}>
-                        {!u.isApproved
-                          ? <><FiClock size={10} /> Pending</>
-                          : u.isActive
-                            ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active</>
-                            : <><span className="w-1.5 h-1.5 rounded-full bg-slate-400" /> Inactive</>
+                        {u.isApproved
+                          ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Approved</>
+                          : <><FiClock size={10} /> Pending</>
                         }
                       </span>
                     </td>
@@ -511,17 +515,12 @@ export default function AdminFarmerManagement() {
                     {/* Actions */}
                     <td className="py-3.5 px-5">
                       <div className="flex items-center justify-end gap-2">
-                        {!isSelf(u._id) && (
+                        {!isSelf(u._id) && !u.isApproved && (
                           <button
-                            onClick={() => handleToggle(u._id)}
-                            disabled={togglingId === u._id}
-                            className={`text-[11px] font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer min-w-[80px] text-center whitespace-nowrap
-                              ${!u.isApproved || !u.isActive
-                                ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700'
-                                : 'bg-slate-50 hover:bg-red-50 border-slate-200 hover:border-red-200 text-slate-500 hover:text-red-600'
-                              }`}
+                            onClick={() => handleToggleApproval(u._id)}
+                            className="text-[11px] font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer whitespace-nowrap bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700"
                           >
-                            {togglingId === u._id ? '…' : !u.isApproved ? 'Approve' : u.isActive ? 'Deactivate' : 'Activate'}
+                            Approve
                           </button>
                         )}
                         <button
@@ -530,6 +529,14 @@ export default function AdminFarmerManagement() {
                         >
                           <FiEdit2 size={10} /> Edit
                         </button>
+                        {!isSelf(u._id) && u.role !== 'admin' && (
+                          <button
+                            onClick={() => setDeleteTarget(u)}
+                            className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-500 hover:text-red-600 transition-all cursor-pointer"
+                          >
+                            <FiTrash2 size={10} /> Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

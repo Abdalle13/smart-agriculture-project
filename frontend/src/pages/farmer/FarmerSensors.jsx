@@ -6,7 +6,7 @@ import {
 import api from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import { SENSOR_CONFIG, SENSOR_THRESHOLDS } from '../../utils/constants'
-import { FiDownload } from 'react-icons/fi'
+import { FiDownload, FiAlertTriangle, FiActivity } from 'react-icons/fi'
 
 // Custom tooltip renderer for Recharts
 const CustomTooltip = ({ active, payload, label, activeColor, unit }) => {
@@ -31,10 +31,14 @@ export default function FarmerSensors() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const activeSensorId = user?.sensorIds?.[0]
+    if (!activeSensorId) {
+      setLoading(false)
+      return
+    }
     const fetchHistory = async () => {
       setLoading(true)
       try {
-        const activeSensorId = user?.sensorIds?.[0] || 's001'
         const { data: res } = await api.get(`/sensors/${activeSensorId}/history`, {
           params: { parameter: activeParam, hours: timeFilter }
         })
@@ -94,6 +98,17 @@ export default function FarmerSensors() {
           <FiDownload className="w-4 h-4" /> Export CSV Log
         </button>
       </div>
+
+      {/* ── No sensor assigned banner ── */}
+      {!user?.sensorIds?.length && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 text-sm">
+          <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+          <div>
+            <p className="font-semibold">No field node assigned to your account</p>
+            <p className="text-amber-600 text-xs mt-0.5 font-normal">Contact your administrator to assign an IoT sensor probe to your farm.</p>
+          </div>
+        </div>
+      )}
 
       {/* ── Parameter Selection Cards ── */}
       <div className="grid grid-cols-3 md:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
@@ -166,6 +181,16 @@ export default function FarmerSensors() {
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
               <div className="w-8 h-8 border-4 border-emerald-700 border-t-emerald-400 rounded-full animate-spin" />
               <p className="text-xs text-emerald-600 font-medium">Fetching history nodes...</p>
+            </div>
+          ) : historyData.length === 0 ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300">
+                <FiActivity size={22} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-500">No data for this period</p>
+                <p className="text-xs text-slate-400 mt-0.5">No readings recorded in the last {timeFilter === 168 ? '7 days' : `${timeFilter} hours`}.</p>
+              </div>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">

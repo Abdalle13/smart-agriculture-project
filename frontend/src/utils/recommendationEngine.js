@@ -14,6 +14,34 @@ export const getSoilRecommendations = (readings) => {
     })
   }
 
+  if (readings.nitrogen > 200) {
+    tips.push({
+      type: 'warning',
+      message: 'Excessive nitrogen detected. Reduce nitrogen fertilizer application to prevent leaf burn and environmental runoff.',
+    })
+  }
+
+  if (readings.phosphorus < 25) {
+    tips.push({
+      type: 'warning',
+      message: 'Low phosphorus (P) detected. Apply DAP fertilizer at 30kg/acre to support root development and flowering.',
+    })
+  }
+
+  if (readings.potassium < 20) {
+    tips.push({
+      type: 'warning',
+      message: 'Low potassium (K) detected. Apply potassium sulfate at 40kg/acre to improve drought resistance and fruit quality.',
+    })
+  }
+
+  if (readings.moisture > 85) {
+    tips.push({
+      type: 'warning',
+      message: 'Soil is waterlogged. Improve field drainage immediately to prevent root rot.',
+    })
+  }
+
   if (readings.moisture < 35) {
     tips.push({
       type: 'danger',

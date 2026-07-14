@@ -89,6 +89,7 @@ export function AuthProvider({ children }) {
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
+// eslint-disable-next-line react-refresh/only-export-components -- standard context+hook co-location, not worth splitting
 export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) throw new Error('useAuth must be used within an AuthProvider')

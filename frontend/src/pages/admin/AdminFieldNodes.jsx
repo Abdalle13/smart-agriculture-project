@@ -115,6 +115,7 @@ export default function AdminFieldNodes() {
   const [sensors,    setSensors]    = useState([])
   const [users,      setUsers]      = useState([])
   const [loading,    setLoading]    = useState(true)
+  const [fetchError, setFetchError] = useState(false)
   const [toast,      setToast]      = useState(null)
   const [editTarget, setEditTarget] = useState(null)
   const [showDelete, setShowDelete] = useState(null)
@@ -129,12 +130,13 @@ export default function AdminFieldNodes() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
+      setFetchError(false)
       try {
         const [sRes, uRes] = await Promise.all([api.get('/sensors'), api.get('/auth/users')])
         if (sRes.data.success) setSensors(sRes.data.data)
         if (uRes.data.success) setUsers(uRes.data.users)
       } catch {
-        setToast({ message: 'Failed to load data from server.', type: 'error' })
+        setFetchError(true)
       } finally {
         setLoading(false)
       }
@@ -142,13 +144,17 @@ export default function AdminFieldNodes() {
     fetchData()
   }, [refreshTick])
 
-  const farmers       = users.filter(u => u.role === 'farmer')
+  const farmers       = users.filter(u => u.role === 'farmer' && u.isApproved)
   const assignedCount = sensors.filter(s => s.farmerId).length
 
   // ── Register ──────────────────────────────────────────────────────────────
   const handleRegister = async (e) => {
     e.preventDefault()
     if (!form.id.trim() || !form.name.trim()) return
+    if (/\s/.test(form.id.trim())) {
+      showToast('Node ID must not contain spaces.', 'error')
+      return
+    }
     setSubmitting(true)
     try {
       const { data } = await api.post('/sensors', {
@@ -282,7 +288,7 @@ export default function AdminFieldNodes() {
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Manage Field Nodes</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Field Node Management</h1>
           <p className="text-slate-400 text-sm mt-0.5">IoT soil probe registry for Afgoye District</p>
         </div>
         <button onClick={handleRefresh}
@@ -290,6 +296,16 @@ export default function AdminFieldNodes() {
           <FiRefreshCw size={13} /> Refresh
         </button>
       </div>
+
+      {/* ── Fetch error banner ──────────────────────────────────────────────── */}
+      {fetchError && (
+        <div className="flex items-center justify-between gap-3 p-4 rounded-xl border bg-red-50 border-red-200 text-red-700 text-sm">
+          <span className="font-semibold">Failed to load data. Check server connection.</span>
+          <button onClick={handleRefresh} className="shrink-0 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors">
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* ── Summary Strip ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3">

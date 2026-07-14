@@ -11,7 +11,7 @@ import logo from '../assets/logo.svg'
 const adminNavItems = [
   { path: ROUTES.ADMIN_DASHBOARD,    label: 'Overview',            Icon: FiGrid      },
   { path: ROUTES.ADMIN_USERS,        label: 'Farmer Management',   Icon: FiUsers     },
-  { path: ROUTES.ADMIN_SENSORS,      label: 'Manage Field Nodes',  Icon: FiRadio     },
+  { path: ROUTES.ADMIN_SENSORS,      label: 'Field Node Management', Icon: FiRadio     },
   { path: ROUTES.ADMIN_DATA_MONITOR, label: 'Data Monitoring',     Icon: FiBarChart2 },
   { path: ROUTES.ADMIN_AI_DIAGNOSIS, label: 'AI Diagnosis',        Icon: FiZap       },
 ]
