@@ -37,5 +37,7 @@ ai-service/venv/
 # Backend runtime uploads (user-submitted images, not source)
 backend/uploads/
 
-# Claude Code local settings (machine-specific paths, not shared)
-.claude/settings.local.json
+# Claude Code / agent tooling (local only, not pushed)
+.claude/
+.agents/
+CLAUDE.md
