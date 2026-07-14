@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(p.devDependencies['eslint-plugin-react-hooks'], p.devDependencies['eslint']\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('react-hooks:', p.devDependencies['eslint-plugin-react-hooks']\\); console.log\\('eslint:', p.devDependencies['eslint']\\)\")",
+      "Bash(git config *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
