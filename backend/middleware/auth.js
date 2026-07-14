@@ -24,8 +24,8 @@ export const protect = async (req, res, next) => {
         return res.status(401).json({ success: false, message: 'Not authorized, user profile not found' })
       }
 
-      if (!req.user.isActive) {
-        return res.status(403).json({ success: false, message: 'Account is pending activation by Admin' })
+      if (!req.user.isApproved) {
+        return res.status(403).json({ success: false, message: 'Account is pending administrator approval' })
       }
 
       next()

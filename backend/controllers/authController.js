@@ -24,8 +24,8 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ success: false, message: 'No account found with that email address.' })
     }
 
-    if (!user.isActive) {
-      return res.status(403).json({ success: false, message: 'Your account is awaiting administrator approval. Please contact your admin.' })
+    if (!user.isApproved) {
+      return res.status(403).json({ success: false, message: 'Your account is pending administrator approval. Please contact your admin.' })
     }
 
     const isMatch = await user.matchPassword(password)
@@ -41,7 +41,6 @@ export const loginUser = async (req, res) => {
       fieldName: user.fieldName,
       location: user.location,
       sensorIds: user.sensorIds,
-      isActive: user.isActive,
     }
 
     res.json({
@@ -63,6 +62,12 @@ export const registerUser = async (req, res) => {
   const { name, email, password, fieldName, location } = req.body
 
   try {
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email, and password are required.' })
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' })
+    }
     const userExists = await User.findOne({ email })
     if (userExists) {
       return res.status(400).json({ success: false, message: 'User already registered' })
@@ -76,7 +81,7 @@ export const registerUser = async (req, res) => {
       fieldName,
       location,
       sensorIds: [],
-      isActive: false, // Requires admin approval
+      isApproved: false,
     })
 
     if (user) {
@@ -140,12 +145,9 @@ export const updateUserStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' })
     }
 
-    const nextActive = !existing.isActive
-    const nextApproved = existing.isApproved || nextActive
-
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      { isActive: nextActive, isApproved: nextApproved },
+      { isApproved: !existing.isApproved },
       { new: true, runValidators: false }
     )
 
@@ -239,8 +241,7 @@ export const createUser = async (req, res) => {
       fieldName: fieldName || '',
       location: location || 'Afgoye, Somalia',
       sensorIds: sensorIds || [],
-      isActive: true,
-      isApproved: true, // Admin-created users are pre-approved
+      isApproved: true,
     })
 
     res.status(201).json({ success: true, user })

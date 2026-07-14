@@ -59,7 +59,11 @@ export const getSensorHistory = async (req, res) => {
  * @access  Public (from physical nodes)
  */
 export const addReading = async (req, res) => {
-  const { sensorId = 's001', nitrogen, phosphorus, potassium, temperature, humidity, moisture } = req.body
+  const { sensorId, nitrogen, phosphorus, potassium, temperature, humidity, moisture } = req.body
+
+  if (!sensorId) {
+    return res.status(400).json({ success: false, message: 'sensorId is required' })
+  }
 
   try {
     const reading = await Sensor.create({
@@ -72,8 +76,8 @@ export const addReading = async (req, res) => {
       moisture,
     })
 
-    // Push new reading to all connected frontend clients instantly
-    io.emit('newReading', reading)
+    // Emit only to clients watching this specific sensor
+    io.to(sensorId).emit('newReading', reading.toObject())
 
     res.status(201).json({ success: true, data: reading })
   } catch (error) {
@@ -111,17 +115,23 @@ export const registerSensor = async (req, res) => {
   const { _id, name, location, farmerId } = req.body
 
   try {
-    const sensorExists = await SensorRegister.findById(_id)
+    if (!_id || !_id.trim()) {
+      return res.status(400).json({ success: false, message: 'Node ID is required.' })
+    }
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Node name is required.' })
+    }
+
+    const sensorExists = await SensorRegister.findById(_id.trim())
     if (sensorExists) {
       return res.status(400).json({ success: false, message: 'Sensor unique code already exists' })
     }
 
     const sensor = await SensorRegister.create({
-      _id,
-      name,
-      location,
+      _id: _id.trim(),
+      name: name.trim(),
+      location: location?.trim() || '',
       farmerId: farmerId || null,
-      status: 'online',
     })
 
     // Add to farmer's sensorIds array if farmerId is assigned
@@ -207,35 +217,56 @@ export const updateSensor = async (req, res) => {
 }
 
 /**
- * @desc    Get all recent readings across all sensor nodes
- * @route   GET /api/sensors/readings/all
+ * @desc    Get readings across all sensor nodes with server-side date + node filtering
+ * @route   GET /api/sensors/readings/all?range=today|7d|30d|all&sensorId=s001
  * @access  Private (Admin Only)
  */
 export const getAllReadings = async (req, res) => {
   try {
-    const readings = await Sensor.find({}).sort({ createdAt: -1 }).limit(100)
+    const { range = 'all', sensorId } = req.query
 
-    // Fetch sensor register to map sensorId → sensorName
-    const sensors = await SensorRegister.find({})
+    const filter = {}
+
+    if (sensorId && sensorId !== 'all') {
+      filter.sensorId = sensorId
+    }
+
+    if (range !== 'all') {
+      const now = new Date()
+      let cutoff
+      if (range === 'today') {
+        cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      } else if (range === '7d') {
+        cutoff = new Date(now - 7 * 24 * 60 * 60 * 1000)
+      } else if (range === '30d') {
+        cutoff = new Date(now - 30 * 24 * 60 * 60 * 1000)
+      }
+      if (cutoff) filter.createdAt = { $gte: cutoff }
+    }
+
+    const [readings, sensors, total] = await Promise.all([
+      Sensor.find(filter).sort({ createdAt: -1 }).limit(500),
+      SensorRegister.find({}),
+      Sensor.countDocuments({}),
+    ])
+
     const sensorMap = {}
-    sensors.forEach(s => {
-      sensorMap[s._id] = s.name
-    })
+    sensors.forEach(s => { sensorMap[s._id] = s.name })
 
     const data = readings.map(r => ({
-      _id: r._id,
-      sensorId: r.sensorId,
+      _id:        r._id,
+      sensorId:   r.sensorId,
       sensorName: sensorMap[r.sensorId] || r.sensorId,
-      timestamp: r.createdAt,
-      nitrogen: r.nitrogen,
+      timestamp:  r.createdAt,
+      nitrogen:   r.nitrogen,
       phosphorus: r.phosphorus,
-      potassium: r.potassium,
-      temperature: r.temperature,
-      humidity: r.humidity,
-      moisture: r.moisture,
+      potassium:  r.potassium,
+      temperature:r.temperature,
+      humidity:   r.humidity,
+      moisture:   r.moisture,
     }))
 
-    res.json({ success: true, data })
+    res.json({ success: true, data, total })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
   }

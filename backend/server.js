@@ -3,12 +3,17 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
+import { fileURLToPath } from 'url'
+import path from 'path'
 import connectDB from './config/db.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Import Routes
 import authRoutes from './routes/authRoutes.js'
 import sensorRegisterRoutes from './routes/sensorRegisterRoutes.js'
 import weatherRoutes from './routes/weatherRoutes.js'
+import diagnosisRoutes from './routes/diagnosisRoutes.js'
 
 dotenv.config()
 connectDB()
@@ -17,6 +22,7 @@ const app = express()
 
 app.use(cors())
 app.use(express.json())
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 // Create HTTP server wrapping Express
 const httpServer = createServer(app)
@@ -31,6 +37,13 @@ export const io = new Server(httpServer, {
 
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`)
+
+  // Client joins the room for their sensor — only receives that sensor's updates
+  socket.on('joinSensor', (sensorId) => {
+    socket.join(sensorId)
+    console.log(`Socket ${socket.id} joined sensor room: ${sensorId}`)
+  })
+
   socket.on('disconnect', () => {
     console.log(`Socket disconnected: ${socket.id}`)
   })
@@ -45,6 +58,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/sensors', sensorRegisterRoutes)
 app.use('/api/weather', weatherRoutes)
+app.use('/api/diagnosis', diagnosisRoutes)
 
 // 404 Handler
 app.use((req, res) => {

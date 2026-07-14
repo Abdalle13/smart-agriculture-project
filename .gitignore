@@ -27,3 +27,15 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# AI service - large trained model binaries (100s of MB, exceed GitHub limits)
+ai-service/models/
+ai-service/venv/
+**/__pycache__/
+*.pyc
+
+# Backend runtime uploads (user-submitted images, not source)
+backend/uploads/
+
+# Claude Code local settings (machine-specific paths, not shared)
+.claude/settings.local.json

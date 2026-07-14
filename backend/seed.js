@@ -17,31 +17,35 @@ dotenv.config()
 // Accounts la samaynayo
 const SEED_USERS = [
   {
-    name: 'Admin AgriSense',
-    email: 'admin@agrisense.io',
+    name: 'Super Admin',
+    email: 'admin@gmail.com',
     password: 'admin123',
     role: 'admin',
-    fieldName: 'HQ Control Room',
+    fieldName: 'Control Room',
     location: 'Mogadishu, Somalia',
     sensorIds: [],
-    isActive: true,
     isApproved: true,
   },
   {
     name: 'Abdalle',
-    email: 'abdalle@agrisense.io',
+    email: 'abdalle@gmail.com',
     password: 'abdalle123',
     role: 'farmer',
     fieldName: 'Hassan North Field',
     location: 'Afgoye, Somalia',
     sensorIds: [],   // start with no sensors assigned
-    isActive: true,
     isApproved: true,
   },
 ]
 
-// Sensor node default
-const SEED_SENSORS = []
+// Sensor nodes
+const SEED_SENSORS = [
+  { _id: 's001', name: 'Beerta Lafole',           location: 'Lafole, Afgooye'           },
+  { _id: 's002', name: 'Beerta Muuri',            location: 'Muuri, Afgooye'            },
+  { _id: 's003', name: 'Beerta Golweyn',          location: 'Golweyn, Afgooye'          },
+  { _id: 's004', name: 'Beerta Shabeelle',        location: 'Shabeelle, Afgooye'        },
+  { _id: 's005', name: 'Beerta Dhexe',            location: 'Bartamaha, Afgooye'        },
+]
 
 // Connect & Run
 const run = async () => {
@@ -89,8 +93,9 @@ const run = async () => {
 
     console.log('\n Seeding completed!')
     console.log('─────────────────────────────────')
-    console.log('  Admin  → admin@agrisense.io   / admin123')
-    console.log('  Farmer → abdalle@agrisense.io / abdalle123')
+    SEED_USERS.forEach(u => {
+      console.log(`  ${u.role.charAt(0).toUpperCase() + u.role.slice(1).padEnd(6)} → ${u.email} / ${u.password}`)
+    })
     console.log('─────────────────────────────────')
     process.exit(0)
 
