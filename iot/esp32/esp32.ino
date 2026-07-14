@@ -128,7 +128,7 @@ void loop() {
     float sendHum  = isnan(humidity)    ? 0.0 : humidity;
 
     String json = "{";
-    json += "\"sensorId\":\"s001\",";
+    json += "\"sensorId\":\"s002\",";
     json += "\"temperature\":" + String(sendTemp) + ",";
     json += "\"humidity\":"    + String(sendHum)  + ",";
     json += "\"moisture\":"    + String(moisture) + ",";
