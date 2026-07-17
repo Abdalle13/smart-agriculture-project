@@ -4,7 +4,7 @@ import User from '../models/User.js'
 
 // Helper to generate JWT
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'super_secret_agrisense_key_2026', {
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'super_secret_key_2026', {
     expiresIn: '30d',
   })
 }
@@ -98,20 +98,6 @@ export const registerUser = async (req, res) => {
 }
 
 /**
- * @desc    Get current user profile
- * @route   GET /api/auth/me
- * @access  Private
- */
-export const getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id)
-    res.json({ success: true, user })
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
-  }
-}
-
-/**
  * @desc    Get all users (Admin only)
  * @route   GET /api/auth/users
  * @access  Private/Admin
@@ -132,7 +118,7 @@ export const getAllUsers = async (req, res) => {
  */
 export const updateUserStatus = async (req, res) => {
   try {
-    // ── Self-protection guard ──────────────────────────────────────────────────
+    // Self-protection guard
     if (req.params.id === req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -257,7 +243,7 @@ export const createUser = async (req, res) => {
  */
 export const deleteUser = async (req, res) => {
   try {
-    // ── Self-protection guard ──────────────────────────────────────────────────
+    // Self-protection guard
     if (req.params.id === req.user._id.toString()) {
       return res.status(403).json({
         success: false,

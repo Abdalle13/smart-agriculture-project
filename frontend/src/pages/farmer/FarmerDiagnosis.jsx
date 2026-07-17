@@ -7,9 +7,10 @@ import api from '../../services/api'
 import { SERVER_BASE_URL } from '../../utils/constants'
 
 const getSeverityBadge = (sev) => {
-  if (sev === 'High')   return <span className="badge-red">High Risk</span>
-  if (sev === 'Medium') return <span className="badge-amber">Medium Risk</span>
-  if (sev === 'Low')    return <span className="badge-blue">Low Risk</span>
+  if (sev === 'High')    return <span className="badge-red">High Risk</span>
+  if (sev === 'Medium')  return <span className="badge-amber">Medium Risk</span>
+  if (sev === 'Low')     return <span className="badge-blue">Low Risk</span>
+  if (sev === 'Unknown') return <span className="badge-gray">Unrecognized</span>
   return <span className="badge-green">None (Healthy)</span>
 }
 

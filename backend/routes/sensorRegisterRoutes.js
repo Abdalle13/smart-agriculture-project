@@ -2,7 +2,7 @@ import express from 'express'
 import {
   getSensors,
   registerSensor,
-  decommissionSensor,
+  deleteSensor,
   updateSensor,
   getLatestReadings,
   getSensorHistory,
@@ -27,7 +27,7 @@ router.route('/')
 
 // Specific sensor node actions
 router.route('/:id')
-  .delete(protect, authorize('admin'), decommissionSensor)
+  .delete(protect, authorize('admin'), deleteSensor)
   .patch(protect, authorize('admin'), updateSensor)
 
 

@@ -209,6 +209,9 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
     return np.expand_dims(img_array, axis=0)
 
 
+CONFIDENCE_THRESHOLD = 0.60  # below this, the image likely isn't one of the trained categories
+
+
 def predict_disease(image_bytes: bytes) -> dict:
     img_tensor = preprocess_image(image_bytes)
     predictions = cnn_model.predict(img_tensor, verbose=0)
@@ -216,6 +219,18 @@ def predict_disease(image_bytes: bytes) -> dict:
     confidence = float(np.max(predictions))
     class_idx  = int(np.argmax(predictions))
     class_key  = class_names[class_idx]
+
+    if confidence < CONFIDENCE_THRESHOLD:
+        return {
+            "disease":    "Unrecognized — not a supported crop/disease",
+            "class_key":  None,
+            "crop":       "Unknown",
+            "confidence": round(confidence, 4),
+            "severity":   "Unknown",
+            "treatment":  "This image doesn't clearly match any of the trained disease categories (mango, corn, pepper, potato, tomato). Retake a clear, well-lit photo of a single leaf, or consult an agronomist.",
+            "prevention": "Make sure the photo is a close-up of one leaf from a supported crop, in good lighting.",
+            "model_used": "CNN",
+        }
 
     info = TREATMENT_MAP.get(class_key, {
         "treatment":  "Consult an agronomist for further analysis.",

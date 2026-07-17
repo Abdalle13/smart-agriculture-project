@@ -54,7 +54,7 @@ export const getSensorHistory = async (req, res) => {
 }
 
 /**
- * @desc    Submit new IoT probe sensor telemetry readings (to Reading model)
+ * @desc    Submit new IoT probe sensor readings (to Reading model)
  * @route   POST /api/sensors/readings
  * @access  Public (from physical nodes)
  */
@@ -153,7 +153,7 @@ export const registerSensor = async (req, res) => {
  * @route   DELETE /api/sensors/:id
  * @access  Private (Admin Only)
  */
-export const decommissionSensor = async (req, res) => {
+export const deleteSensor = async (req, res) => {
   const sensorId = req.params.id
 
   try {
@@ -170,14 +170,14 @@ export const decommissionSensor = async (req, res) => {
     }
 
     await SensorRegister.findByIdAndDelete(sensorId)
-    res.json({ success: true, message: 'Sensor node decommissioned successfully' })
+    res.json({ success: true, message: 'Sensor node deleted successfully' })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
   }
 }
 
 /**
- * @desc    Update sensor node metadata (name, location, farmerId)
+ * @desc    Update sensor node (name, location, farmerId)
  * @route   PATCH /api/sensors/:id
  * @access  Private (Admin Only)
  */

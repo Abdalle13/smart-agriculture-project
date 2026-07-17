@@ -3,6 +3,28 @@ import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 import { getWeatherAdvisory } from '../../utils/recommendationEngine'
 import { FiAlertTriangle, FiAlertOctagon, FiCheckCircle, FiInfo, FiRefreshCw } from 'react-icons/fi'
+import {
+  WiThunderstorm, WiSprinkle, WiRain, WiSnow, WiFog,
+  WiDaySunny, WiDayCloudy, WiCloud, WiCloudy, WiNa,
+} from 'react-icons/wi'
+
+const WEATHER_ICONS = {
+  'thunderstorm':   WiThunderstorm,
+  'drizzle':        WiSprinkle,
+  'rain':           WiRain,
+  'snow':           WiSnow,
+  'fog':            WiFog,
+  'clear':          WiDaySunny,
+  'partly-cloudy':  WiDayCloudy,
+  'cloudy':         WiCloud,
+  'overcast':       WiCloudy,
+  'unknown':        WiNa,
+}
+
+function WeatherIcon({ code, className }) {
+  const Icon = WEATHER_ICONS[code] || WiNa
+  return <Icon className={className} />
+}
 
 
 export default function FarmerWeather() {
@@ -127,7 +149,7 @@ export default function FarmerWeather() {
 
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
             <div className="flex sm:flex-col items-center sm:items-start gap-3 sm:gap-1 w-full sm:w-auto">
-              <span className="text-5xl sm:text-7xl">{weather?.current?.icon}</span>
+              <WeatherIcon code={weather?.current?.icon} className="w-16 h-16 sm:w-24 sm:h-24 text-emerald-600" />
               <div>
                 <p className="text-3xl sm:text-4xl font-extrabold text-slate-900">{weather?.current?.temp}°C</p>
                 <p className="text-sm text-emerald-600 font-bold uppercase tracking-wider">{weather?.current?.description}</p>
@@ -200,7 +222,7 @@ export default function FarmerWeather() {
               className="p-3 sm:p-4 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl text-center space-y-2 sm:space-y-3 transition-colors"
             >
               <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">{day.day}</p>
-              <span className="text-3xl sm:text-4xl block my-1">{day.icon}</span>
+              <WeatherIcon code={day.icon} className="w-9 h-9 sm:w-11 sm:h-11 mx-auto my-1 text-emerald-600" />
               <div>
                 <p className="text-xs font-semibold text-emerald-700">{day.description}</p>
                 <p className="text-[10px] text-slate-400 font-medium mt-0.5">Rain: {day.rain}%</p>

@@ -85,9 +85,9 @@ const run = async () => {
       const exists = await User.findOne({ email: u.email })
       if (!exists) {
         await User.create(u)       // bcrypt hashing happens automatically via pre-save hook
-        console.log(`👤 User created: ${u.email}  [${u.role}]  password: ${u.password}`)
+        console.log(`User created: ${u.email}  [${u.role}]  password: ${u.password}`)
       } else {
-        console.log(`⚠️  User already exists: ${u.email} (skipped)`)
+        console.log(`User already exists: ${u.email} (skipped)`)
       }
     }
 
@@ -100,7 +100,7 @@ const run = async () => {
     process.exit(0)
 
   } catch (err) {
-    console.error('❌ Seed Error:', err.message)
+    console.error('Seed Error:', err.message)
     process.exit(1)
   }
 }

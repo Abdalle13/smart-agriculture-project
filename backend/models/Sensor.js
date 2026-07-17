@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-// Sensor Model — kaydinaya xogta telemetry-da ESP32 soo dirto
+// Sensor Model — wuxu keydiya xogta ESP32 soo diro
 const sensorSchema = new mongoose.Schema({
   sensorId:    { type: String, index: true },  // ID-da aalada (s001, s002...)
   temperature: { type: Number },

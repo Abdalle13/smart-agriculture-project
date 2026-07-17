@@ -6,18 +6,18 @@ const AFGOYE_LAT = 2.1393
 const AFGOYE_LON = 45.1213
 const OWM_BASE   = 'https://api.openweathermap.org/data/2.5'
 
-// Map OWM weather condition codes to emoji icons
+// Map OWM weather condition codes to icon keys (rendered as real icons on the frontend)
 const getWeatherIcon = (code) => {
-  if (code >= 200 && code < 300) return '⛈️'
-  if (code >= 300 && code < 400) return '🌦️'
-  if (code >= 500 && code < 600) return '🌧️'
-  if (code >= 600 && code < 700) return '❄️'
-  if (code >= 700 && code < 800) return '🌫️'
-  if (code === 800)               return '☀️'
-  if (code === 801)               return '🌤️'
-  if (code === 802)               return '⛅'
-  if (code >= 803)                return '☁️'
-  return '🌡️'
+  if (code >= 200 && code < 300) return 'thunderstorm'
+  if (code >= 300 && code < 400) return 'drizzle'
+  if (code >= 500 && code < 600) return 'rain'
+  if (code >= 600 && code < 700) return 'snow'
+  if (code >= 700 && code < 800) return 'fog'
+  if (code === 800)               return 'clear'
+  if (code === 801)               return 'partly-cloudy'
+  if (code === 802)               return 'cloudy'
+  if (code >= 803)                return 'overcast'
+  return 'unknown'
 }
 
 
@@ -112,7 +112,7 @@ export const getWeather = async (req, res) => {
       }
     })
 
-    // ── Build smart weather alerts ──
+    // Build smart weather alerts
     const alerts = []
     const windKmh      = Math.round((current.wind?.speed || 0) * 3.6)
     const rainTomorrow = forecastDays[1]?.rain || 0
@@ -144,7 +144,7 @@ export const getWeather = async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('❌ OpenWeatherMap API Error:', error.message)
+    console.error('OpenWeatherMap API Error:', error.message)
     return res.status(500).json({ success: false, message: 'Weather service temporarily unavailable.' })
   }
 }

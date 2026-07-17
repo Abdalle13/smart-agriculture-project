@@ -37,7 +37,7 @@ This folder contains the Arduino sketch for the AgriSense ESP32 soil monitoring 
 |------------|-----------|
 | VCC        | 5V        |
 | GND        | GND       |
-| DE         | GPIO 5    |
+| DE         | GPIO 19   |
 | RE         | GPIO 4    |
 | RO (RX)    | GPIO 16   |
 | DI (TX)    | GPIO 17   |
@@ -103,6 +103,14 @@ const char* password = "YOUR_WIFI_PASSWORD";
 String serverName = "http://192.168.X.X:5000/api/sensors/readings";
 ```
 
+If you're flashing **more than one probe**, also update the hardcoded sensor ID further down in the file (in the JSON payload construction) so each device reports under its own node — otherwise every probe will submit readings as the same node and overwrite each other's data:
+
+```cpp
+json += "\"sensorId\":\"s002\",";   // change to the node ID registered for this probe (s001, s003, ...)
+```
+
+The backend accepts readings for any `sensorId` string without checking it against the registry — but the reading won't show up anywhere meaningful in the dashboard unless that ID matches a node already registered (seeded via `node seed.js`, or created by an admin in the Field Nodes page).
+
 To find your PC's IP address, run in terminal:
 ```
 ipconfig        # Windows
@@ -137,10 +145,10 @@ The sketch posts to:
 POST http://<YOUR_PC_IP>:5000/api/sensors/readings
 ```
 
-Example payload sent every 30 seconds:
+Example payload sent every 30 seconds (`sensorId` is hardcoded to `s002` in the sketch — see Step 4):
 ```json
 {
-  "sensorId":    "s001",
+  "sensorId":    "s002",
   "temperature": 29.3,
   "humidity":    58.0,
   "moisture":    42.0,
@@ -151,3 +159,17 @@ Example payload sent every 30 seconds:
 ```
 
 A successful response returns HTTP `201 Created`.
+
+---
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---|---|---|
+| Stuck on `Connecting....` during upload | ESP32 didn't enter bootloader mode in time | Hold the **BOOT** button as soon as Arduino IDE starts uploading, release once it begins writing |
+| `A fatal error occurred: Failed to connect to ESP32` | Wrong COM port, or USB driver not installed | Install the CP2102 or CH340 USB driver (check your board), reselect `Tools → Port` |
+| Serial Monitor shows garbage characters | Baud rate mismatch | Set Serial Monitor baud rate to **115200** (`Tools → Serial Monitor`) |
+| `WiFi unavailable. Skipping send.` in Serial Monitor | Wrong SSID/password, or 5 GHz network (ESP32 only supports 2.4 GHz) | Double-check credentials; connect to a 2.4 GHz WiFi network |
+| `HTTP Response: -1` or negative response code | `serverName` IP is wrong, or the backend isn't running/reachable on that network | Confirm the backend is running, re-run `ipconfig`/`ifconfig` (IP changes across networks/reboots), and make sure the ESP32 and PC are on the same network |
+| Readings arrive but never show up on the dashboard | `sensorId` in the sketch doesn't match a registered node | Register the node first (`node seed.js`, or Admin → Field Nodes), or edit the `sensorId` in the sketch to match an existing one |
+| NPK values always read `0` or `NaN` | RS485 wiring reversed (A/B swapped), or wrong slave ID/baud rate | Swap NPK sensor's A+/B- wires; confirm slave ID `1` and baud `9600` match the sensor's actual configuration |

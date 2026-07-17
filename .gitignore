@@ -30,6 +30,7 @@ Thumbs.db
 
 # AI service - large trained model binaries (100s of MB, exceed GitHub limits)
 ai-service/models/
+ai-service/.venv/
 ai-service/venv/
 **/__pycache__/
 *.pyc
@@ -41,3 +42,4 @@ backend/uploads/
 .claude/
 .agents/
 CLAUDE.md
+skills-lock.json

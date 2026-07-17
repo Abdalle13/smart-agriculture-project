@@ -2,7 +2,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from utils.predictor import predict_disease
 
-app = FastAPI(title="AgriSense AI Service", version="1.0.0")
+app = FastAPI(title="AgriSense AI Service")
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,7 +17,7 @@ MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 @app.get("/")
 def health_check():
-    return {"status": "ok", "service": "AgriSense AI", "version": "1.0.0"}
+    return {"status": "ok", "service": "AgriSense AI"}
 
 
 @app.post("/predict")
