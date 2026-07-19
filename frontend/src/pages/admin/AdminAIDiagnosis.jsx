@@ -4,7 +4,6 @@ import {
   FiRefreshCw, FiUsers
 } from 'react-icons/fi'
 import api from '../../services/api'
-import { SERVER_BASE_URL } from '../../utils/constants'
 
 const getSeverityBadge = (sev) => {
   if (sev === 'High')    return <span className="badge-red">High Risk</span>
@@ -226,7 +225,7 @@ export default function AdminAIDiagnosis() {
                       <td className="py-3 px-2">
                         {log.imageUrl ? (
                           <img
-                            src={`${SERVER_BASE_URL}${log.imageUrl}`}
+                            src={log.imageUrl}
                             alt={log.fileName}
                             className="w-12 h-12 object-cover rounded-xl border border-slate-200"
                           />
