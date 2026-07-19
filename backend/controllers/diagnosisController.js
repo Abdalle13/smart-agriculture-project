@@ -1,15 +1,12 @@
 import axios from 'axios'
 import FormData from 'form-data'
-import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
+import ImageKit, { toFile } from '@imagekit/nodejs'
 import DiagnosisHistory from '../models/DiagnosisHistory.js'
 
-const __dirname      = path.dirname(fileURLToPath(import.meta.url))
-const UPLOAD_DIR     = path.join(__dirname, '..', 'uploads', 'diagnoses')
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000'
 
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+const imagekit = new ImageKit({ privateKey: process.env.IMAGEKIT_PRIVATE_KEY })
 
 // POST /api/diagnosis
 // Farmer uploads image → Node.js forwards to FastAPI → saves result to MongoDB
@@ -34,15 +31,18 @@ export const createDiagnosis = async (req, res) => {
 
     const { disease, confidence, severity, treatment, prevention, model_used, class_key, crop } = aiResponse.data
 
-    // Save image buffer to disk
+    // Upload image to ImageKit CDN
     const ext      = path.extname(req.file.originalname) || '.jpg'
     const fileName = `${Date.now()}_${req.user._id}${ext}`
-    fs.writeFileSync(path.join(UPLOAD_DIR, fileName), req.file.buffer)
-    const imageUrl = `/uploads/diagnoses/${fileName}`
+    const uploaded = await imagekit.files.upload({
+      file:     await toFile(req.file.buffer, fileName),
+      fileName,
+      folder:   '/diagnoses',
+    })
 
     const diagnosis = await DiagnosisHistory.create({
       farmerId:   req.user._id,
-      imageUrl,
+      imageUrl:   uploaded.url,
       disease,
       classKey:   class_key,
       confidence,

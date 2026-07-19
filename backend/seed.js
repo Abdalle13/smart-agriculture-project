@@ -6,8 +6,8 @@
  *   node seed.js --clear → tirtir dhammaan users-ka
  */
 
-import mongoose from 'mongoose'
 import dotenv from 'dotenv'
+import connectDB from './config/db.js'
 import User from './models/User.js'
 import SensorRegister from './models/SensorRegister.js'
 import Sensor from './models/Sensor.js'
@@ -50,8 +50,7 @@ const SEED_SENSORS = [
 // Connect & Run
 const run = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI)
-    console.log('MongoDB Connected')
+    await connectDB()
 
     const clearMode = process.argv.includes('--clear')
 

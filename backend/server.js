@@ -1,13 +1,9 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
-import { fileURLToPath } from 'url'
-import path from 'path'
 import connectDB from './config/db.js'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Import Routes
 import authRoutes from './routes/authRoutes.js'
@@ -15,14 +11,12 @@ import sensorRegisterRoutes from './routes/sensorRegisterRoutes.js'
 import weatherRoutes from './routes/weatherRoutes.js'
 import diagnosisRoutes from './routes/diagnosisRoutes.js'
 
-dotenv.config()
 connectDB()
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 // Create HTTP server wrapping Express
 const httpServer = createServer(app)

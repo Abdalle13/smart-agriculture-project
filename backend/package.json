@@ -17,6 +17,7 @@
   "author": "AgriSense Team",
   "license": "ISC",
   "dependencies": {
+    "@imagekit/nodejs": "^7.10.0",
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",

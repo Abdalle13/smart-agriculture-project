@@ -28,8 +28,12 @@ Thumbs.db
 *.sln
 *.sw?
 
-# AI service - large trained model binaries (100s of MB, exceed GitHub limits)
-ai-service/models/
+# AI service - large trained model binaries (100s of MB, exceed GitHub limits).
+# Only cnn_best.keras + class_names.json are loaded in production (predictor.py);
+# the rf/knn/svm .pkl files are thesis-comparison only and stay off git.
+ai-service/models/*
+!ai-service/models/cnn_best.keras
+!ai-service/models/class_names.json
 ai-service/.venv/
 ai-service/venv/
 **/__pycache__/
