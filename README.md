@@ -178,15 +178,19 @@ NODE_ENV=development
 AI_SERVICE_URL=http://localhost:8000
 OPENWEATHER_API_KEY=your_openweather_api_key_here
 FRONTEND_URL=http://localhost:5173
+IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key_here
 ```
 
 `frontend/.env` (optional — falls back to localhost):
 
 ```
 VITE_API_URL=http://localhost:5000/api
+VITE_AI_URL=http://localhost:8000
 ```
 
 None of these `.env` files are committed to git — only the `.example` templates are.
+
+> **New:** diagnosis images are now uploaded to **ImageKit** (CDN) instead of being saved to local disk — see [`backend/README.md`](backend/README.md) for the `IMAGEKIT_PRIVATE_KEY` setup. This also means diagnosis image URLs work unchanged after deployment (no local disk dependency).
 
 ---
 
@@ -211,6 +215,8 @@ The CNN model file is **not included** in this repository (too large for git).
 2. Export: `model.save("cnn_best.keras")`
 3. Place the file at: `ai-service/models/cnn_best.keras`
 4. Verify `ai-service/models/class_names.json` class order matches your training class order exactly
+
+> **Update:** `cnn_best.keras` (28 MB) and `class_names.json` are now committed directly to this repo — they're the only two files `predictor.py` actually loads at runtime, and both are well under GitHub's 100 MB limit. Cloning the repo is enough; no manual copy needed for these two. The other model files (`knn_model.pkl`, `rf_model.pkl`, `svm_model.pkl`, `svm_scaler.pkl`) stay excluded via `.gitignore` — they're thesis-comparison only and far too large for git (up to 463 MB each).
 
 **Supported crops and classes (27 total):**
 
@@ -246,6 +252,33 @@ The CNN model file is **not included** in this repository (too large for git).
 | POST   | `/predict` (port 8000)       | None         | `ai-service` — image → disease result (called by backend, not the frontend) |
 
 Full route tables with all fields: [`backend/README.md`](backend/README.md).
+
+---
+
+## Deployment
+
+Production architecture (all free-tier services):
+
+```
+Vercel (frontend, React/Vite)
+    ↓  VITE_API_URL
+Railway (backend, Node.js/Express + Socket.io)
+    ↓  AI_SERVICE_URL          ↓  MONGODB_URI
+Railway (ai-service, FastAPI)   MongoDB Atlas
+    (backend also talks to ImageKit for diagnosis image storage)
+```
+
+| Service | Host | Root directory | Notes |
+|---|---|---|---|
+| Frontend | Vercel | `frontend/` | Framework preset: Vite. `vercel.json` handles the SPA rewrite for React Router. |
+| Backend | Railway | `backend/` | Start command: `npm start`. Needs `MONGODB_URI`, `JWT_SECRET`, `AI_SERVICE_URL`, `FRONTEND_URL`, `IMAGEKIT_PRIVATE_KEY`, `OPENWEATHER_API_KEY`. |
+| AI Service | Railway | `ai-service/` | Start command (`Procfile`): `uvicorn main:app --host 0.0.0.0 --port $PORT`. |
+| Database | MongoDB Atlas | — | Free M0 cluster. Whitelist `0.0.0.0/0` (Railway's IP isn't static). |
+| Image storage | ImageKit | — | Diagnosis leaf photos are uploaded here instead of local disk (Railway's filesystem is ephemeral). |
+
+After deploying the backend and frontend, go back and set `FRONTEND_URL` on the Railway backend to the real Vercel URL (Socket.io CORS depends on it), then redeploy.
+
+See [`backend/README.md`](backend/README.md), [`frontend/README.md`](frontend/README.md), and [`ai-service/README.md`](ai-service/README.md) for each service's full environment variable list.
 
 ---
 

@@ -38,6 +38,7 @@ NODE_ENV=development
 AI_SERVICE_URL=http://localhost:8000
 OPENWEATHER_API_KEY=your_openweather_api_key_here
 FRONTEND_URL=http://localhost:5173
+IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key_here
 ```
 
 | Variable | Required | Purpose |
@@ -49,6 +50,7 @@ FRONTEND_URL=http://localhost:5173
 | `AI_SERVICE_URL` | No (defaults to `http://localhost:8000`) | Base URL of the `ai-service` FastAPI microservice, used by `/api/diagnosis` |
 | `OPENWEATHER_API_KEY` | Yes, for `/api/weather` | Free key from https://openweathermap.org/api — get one under *My API Keys* |
 | `FRONTEND_URL` | No (defaults to `http://localhost:5173`) | Allowed origin for Socket.io CORS |
+| `IMAGEKIT_PRIVATE_KEY` | Yes, for `/api/diagnosis` | From your [ImageKit dashboard](https://imagekit.io/dashboard/developer/api-keys) → used to upload diagnosis leaf photos to ImageKit's CDN instead of local disk |
 
 ### 3. Seed the database (first run)
 
@@ -189,6 +191,8 @@ All connected frontend clients receive this instantly — no polling needed.
 
 `POST /api/diagnosis` forwards the uploaded image to the Python `ai-service` microservice (`AI_SERVICE_URL`, default `http://localhost:8000`), saves the returned prediction to `DiagnosisHistory`, and stores the original image under `backend/uploads/diagnoses/`. See [`../ai-service/README.md`](../ai-service/README.md) for that service's setup.
 
+> **Update:** image storage moved to **ImageKit** (CDN) — `diagnosisController.js` now uploads the file via `@imagekit/nodejs` (`IMAGEKIT_PRIVATE_KEY`) and saves the returned CDN `url` on `DiagnosisHistory.imageUrl` directly. `backend/uploads/` is no longer written to (it's gitignored) — this was required because Railway's filesystem is ephemeral and would lose local files on every redeploy.
+
 ---
 
 ## Troubleshooting
@@ -201,6 +205,18 @@ All connected frontend clients receive this instantly — no polling needed.
 | `Diagnosis failed` / 500 from `POST /api/diagnosis` | `ai-service` isn't running, or `AI_SERVICE_URL` points to the wrong address | Start `ai-service` (see its README) and confirm the URL/port match |
 | Login succeeds but returns 403 "pending administrator approval" | New farmer registrations start with `isApproved: false` | Log in as admin and approve the account via `PUT /api/auth/users/:id/status` |
 | Socket.io events never arrive on the frontend | `FRONTEND_URL` doesn't match the origin the frontend is actually served from | Set `FRONTEND_URL` in `.env` to match (default assumes `http://localhost:5173`) |
+| `querySrv ECONNREFUSED _mongodb._tcp.cluster0...` on startup or `node seed.js` | Your router/ISP DNS doesn't resolve `mongodb+srv://` SRV records (common on home networks) — not an Atlas or credentials problem | Already handled: `config/db.js` forces Node to use Google/Cloudflare DNS (`8.8.8.8`, `1.1.1.1`) before connecting. If it still fails, confirm the cluster is running in Atlas and your IP is whitelisted (`0.0.0.0/0`) |
+| `ImageKitError: The IMAGEKIT_PRIVATE_KEY environment variable is missing or empty` | `IMAGEKIT_PRIVATE_KEY` not set in `.env`, or `.env` wasn't loaded before `diagnosisController.js` imported | Add the key to `.env`; `server.js` loads `dotenv/config` as its very first import specifically so this doesn't happen |
+
+---
+
+## Deployment (Railway)
+
+1. New Railway service → connect this GitHub repo → set **root directory** to `backend/`.
+2. Start command: `npm start` (Railway auto-detects this from `package.json`).
+3. Set environment variables in Railway's "Variables" tab: `MONGODB_URI` (Atlas connection string), `JWT_SECRET`, `AI_SERVICE_URL` (the deployed `ai-service` Railway URL), `FRONTEND_URL` (the deployed Vercel URL), `IMAGEKIT_PRIVATE_KEY`, `OPENWEATHER_API_KEY`, `NODE_ENV=production`. Do **not** upload your local `.env` file — paste the values directly into Railway's dashboard.
+4. `PORT` doesn't need to be set — Railway injects it automatically and `server.js` already reads `process.env.PORT`.
+5. After the frontend is deployed to Vercel, come back and update `FRONTEND_URL` to the real Vercel domain, then redeploy — Socket.io's CORS check depends on it matching exactly.
 
 ---
 

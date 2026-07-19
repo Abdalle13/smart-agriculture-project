@@ -25,6 +25,8 @@ ai-service/
 
 > `knn_model.pkl`, `rf_model.pkl`, `svm_model.pkl` are used only for thesis accuracy comparison — not called in production.
 
+> **Git tracking:** only `cnn_best.keras` (28 MB) and `class_names.json` are committed to this repo — they're the two files `predictor.py` actually loads. The `.pkl` thesis-comparison files (up to 463 MB each) are excluded via `.gitignore` since they exceed GitHub's size limits and aren't needed to run the service. Cloning the repo is enough to get everything `main.py` needs.
+
 ---
 
 ## Requirements
@@ -252,6 +254,18 @@ All images are processed before inference:
 | Traceback appears after pressing `Ctrl+C` to stop the server | Normal `uvicorn --reload` shutdown behavior on Windows | Harmless — ignore it if `Application startup complete` printed beforehand |
 | `Address already in use` on port 8000 | A previous `uvicorn` process is still running | Stop the old process, or start on a different port with `--port 8001` |
 | `500` error / model inference error on `/predict` | Corrupted or missing model file in `models/` | Confirm `cnn_best.keras` and `class_names.json` exist and aren't truncated |
+
+---
+
+## Deployment (Railway)
+
+1. New Railway service → connect this GitHub repo → set **root directory** to `ai-service/`.
+2. Start command is picked up automatically from the `Procfile`: `uvicorn main:app --host 0.0.0.0 --port $PORT`. Railway injects `$PORT` — no need to set it manually.
+3. No environment variables are required (CORS is open by design — this service is only ever called server-to-server by the backend, never directly from a browser).
+4. After deploying, copy the Railway-assigned URL and set it as `AI_SERVICE_URL` on the Railway **backend** service (see [`../backend/README.md`](../backend/README.md)).
+5. Confirm it's live: `GET https://<your-ai-service>.up.railway.app/` should return the health check JSON.
+
+> Cold starts: TensorFlow takes a few seconds to load the model on the first request after a period of inactivity (Railway's free tier can sleep idle services) — this is normal, not an error.
 
 ---
 

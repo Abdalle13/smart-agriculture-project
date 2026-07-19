@@ -36,10 +36,11 @@ npm run preview  # serve the production build locally, to sanity-check before de
 
 ## Environment Variables
 
-Create `frontend/.env` (optional — everything falls back to localhost defaults):
+Create `frontend/.env` (optional — everything falls back to localhost defaults; see [`.env.example`](.env.example)):
 
 ```
 VITE_API_URL=http://localhost:5000/api
+VITE_AI_URL=http://localhost:8000
 ```
 
 | Variable       | Required                                     | Purpose                                                             |
@@ -47,6 +48,8 @@ VITE_API_URL=http://localhost:5000/api
 | `VITE_API_URL` | No (defaults to `http://localhost:5000/api`) | Base URL the app calls for all backend requests (`services/api.js`) |
 
 > `utils/constants.js` also defines an `AI_BASE_URL` (`VITE_AI_URL`, default `http://localhost:8000`), but nothing in the app currently calls it — the AI diagnosis flow goes through the backend (`POST /api/diagnosis`), which forwards to `ai-service` itself. It's safe to leave unset.
+
+> **Deployment note:** in production, set `VITE_API_URL` (and `VITE_AI_URL`) as Vercel environment variables pointing at your deployed backend/ai-service URLs — Vite env vars are baked in at **build time**, so changing them on Vercel requires a redeploy, not just a restart.
 
 ---
 
@@ -203,3 +206,13 @@ The backend forwards the image to `ai-service` for CNN inference, saves the resu
 | Env var changes don't seem to apply       | Vite only reads `.env` at dev-server startup                                       | Restart `npm run dev` after editing `frontend/.env`                                    |
 | 401 redirect loop to `/login`             | Stored token expired or invalid                                                    | Clear `localStorage` (`agrisense_token`, `agrisense_user`) and log in again            |
 | AI diagnosis upload fails                 | Backend's `AI_SERVICE_URL` can't reach `ai-service`, or `ai-service` isn't running | Confirm `ai-service` is running on port 8000 — see its Troubleshooting section         |
+| Refreshing a deep link (e.g. `/farmer/dashboard`) 404s in production | Vercel doesn't know to fall back to `index.html` for client-side routes | Already handled by `frontend/vercel.json` (SPA rewrite) — make sure it's present and deployed |
+
+---
+
+## Deployment (Vercel)
+
+1. Import this GitHub repo into Vercel → set **root directory** to `frontend/` → framework preset: **Vite**.
+2. Set environment variables in Vercel's project settings: `VITE_API_URL` (deployed backend URL + `/api`), `VITE_AI_URL` (deployed ai-service URL, optional — not currently called directly by the app).
+3. `vercel.json` in this folder already handles the SPA rewrite needed for React Router — no extra config required.
+4. Deploy → Vercel gives you a `*.vercel.app` URL. Set that as `FRONTEND_URL` on the Railway backend afterwards (see [`../backend/README.md`](../backend/README.md)) so Socket.io's CORS allows it.
