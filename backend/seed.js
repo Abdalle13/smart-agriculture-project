@@ -1,5 +1,5 @@
 /**
- * seed.js — Samaynta default accounts (Admin + Farmer)
+ * seed.js: Samaynta default accounts (Admin + Farmer)
  * 
  * Sida loo isticmaalo:
  *   node seed.js         → ku dar accountyada
@@ -73,7 +73,7 @@ const run = async () => {
       const exists = await SensorRegister.findById(s._id)
       if (!exists) {
         await SensorRegister.create(s)
-        console.log(` Sensor created: ${s._id} — ${s.name}`)
+        console.log(` Sensor created: ${s._id}, ${s.name}`)
       } else {
         console.log(` Sensor already exists: ${s._id} (skipped)`)
       }

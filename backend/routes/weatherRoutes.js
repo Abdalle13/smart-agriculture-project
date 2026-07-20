@@ -4,7 +4,7 @@ import { protect } from '../middleware/auth.js'
 
 const router = express.Router()
 
-// GET /api/weather — live Afgoye weather data (OpenWeatherMap)
+// GET /api/weather: live Afgoye weather data (OpenWeatherMap)
 router.get('/', protect, getWeather)
 
 export default router

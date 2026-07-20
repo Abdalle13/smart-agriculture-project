@@ -36,7 +36,7 @@ function ProtectedRoute({ children, requiredRole }) {
   if (loading) return <LoadingScreen />
   if (!isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace />
   if (requiredRole && user?.role !== requiredRole) {
-    // Wrong role — redirect to their own home
+    // Wrong role, redirect to their own home
     return <Navigate to={
       user?.role === ROLES.ADMIN ? ROUTES.ADMIN_DASHBOARD : ROUTES.FARMER_DASHBOARD
     } replace />

@@ -60,7 +60,7 @@ export const createDiagnosis = async (req, res) => {
   }
 }
 
-// GET /api/diagnosis/my  — farmer sees their own history
+// GET /api/diagnosis/my: farmer sees their own history
 export const getMyDiagnoses = async (req, res) => {
   try {
     const diagnoses = await DiagnosisHistory
@@ -74,7 +74,7 @@ export const getMyDiagnoses = async (req, res) => {
   }
 }
 
-// GET /api/diagnosis/all?range=today|7d|30d|all&farmerId=xxx  — admin sees all with filters
+// GET /api/diagnosis/all?range=today|7d|30d|all&farmerId=xxx: admin sees all with filters
 export const getAllDiagnoses = async (req, res) => {
   try {
     const { range = 'today', farmerId } = req.query
@@ -110,7 +110,7 @@ export const getAllDiagnoses = async (req, res) => {
   }
 }
 
-// GET /api/diagnosis/stats  — admin summary
+// GET /api/diagnosis/stats: admin summary
 export const getDiagnosisStats = async (req, res) => {
   try {
     const total = await DiagnosisHistory.countDocuments()

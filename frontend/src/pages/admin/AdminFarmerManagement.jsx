@@ -137,7 +137,7 @@ function UserForm({ editTarget, currentUserId, onSave, onClose }) {
 
   return (
     <Modal
-      title={isEdit ? `Edit — ${editTarget.name}` : 'Create New Farmer'}
+      title={isEdit ? `Edit: ${editTarget.name}` : 'Create New Farmer'}
       accent={!isEdit}
       onClose={onClose}
     >
@@ -495,7 +495,7 @@ export default function AdminFarmerManagement() {
                     <td className="py-3.5 px-5 text-xs text-slate-400 font-mono whitespace-nowrap">
                       {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-GB', {
                         day: '2-digit', month: 'short', year: 'numeric'
-                      }) : '—'}
+                      }) : 'N/A'}
                     </td>
 
                     {/* Status */}

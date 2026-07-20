@@ -13,7 +13,7 @@ import { protect, authorize } from '../middleware/auth.js'
 
 const router = express.Router()
 
-// IoT hardware data submission route (Public — no auth needed)
+// IoT hardware data submission route (Public, no auth needed)
 router.post('/readings', addReading)
 
 // Admin: all readings

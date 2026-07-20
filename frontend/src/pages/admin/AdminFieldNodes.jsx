@@ -223,7 +223,7 @@ export default function AdminFieldNodes() {
 
       {/* ── Edit Modal ─────────────────────────────────────────────────────── */}
       {editTarget && (
-        <Modal title={`Edit Node — ${editTarget._id}`} onClose={() => setEditTarget(null)}>
+        <Modal title={`Edit Node: ${editTarget._id}`} onClose={() => setEditTarget(null)}>
           <form onSubmit={handleUpdate} className="space-y-4">
             <Field label="Node ID">
               <input value={editTarget._id} disabled
@@ -241,7 +241,7 @@ export default function AdminFieldNodes() {
             <Field label="Assigned Farmer">
               <select value={editTarget.farmerId || ''} className={`${inputCls} cursor-pointer`}
                 onChange={e => setEditTarget(p => ({ ...p, farmerId: e.target.value }))}>
-                <option value="">— Unassigned —</option>
+                <option value="">Unassigned</option>
                 {farmers.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
               </select>
             </Field>
@@ -391,7 +391,7 @@ export default function AdminFieldNodes() {
             <Field label="Assign to Farmer">
               <select value={form.farmerId} onChange={e => setForm(p => ({ ...p, farmerId: e.target.value }))}
                 className={`${inputCls} cursor-pointer`}>
-                <option value="">— Unassigned —</option>
+                <option value="">Unassigned</option>
                 {farmers.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
               </select>
             </Field>

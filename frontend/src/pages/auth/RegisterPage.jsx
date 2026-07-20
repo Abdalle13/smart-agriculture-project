@@ -160,7 +160,7 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  {/* Password + Confirm — side by side */}
+                  {/* Password + Confirm: side by side */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="password" className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">

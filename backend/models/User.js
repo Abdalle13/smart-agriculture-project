@@ -49,8 +49,8 @@ const userSchema = new mongoose.Schema(
   }
 )
 
-// Encrypt password using bcrypt — only re-hash when password field is actually changed
-// Note: async middleware in Mongoose 7+ must NOT call next() — promise is handled automatically
+// Encrypt password using bcrypt, only re-hash when password field is actually changed
+// Note: async middleware in Mongoose 7+ must NOT call next(), promise is handled automatically
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return
 

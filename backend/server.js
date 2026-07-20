@@ -32,7 +32,7 @@ export const io = new Server(httpServer, {
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`)
 
-  // Client joins the room for their sensor — only receives that sensor's updates
+  // Client joins the room for their sensor, only receives that sensor's updates
   socket.on('joinSensor', (sensorId) => {
     socket.join(sensorId)
     console.log(`Socket ${socket.id} joined sensor room: ${sensorId}`)

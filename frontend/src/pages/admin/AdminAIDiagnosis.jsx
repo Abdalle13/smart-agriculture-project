@@ -117,7 +117,7 @@ export default function AdminAIDiagnosis() {
               <s.Icon size={15} />
             </div>
             <div className="min-w-0">
-              <p className={`text-xl sm:text-2xl font-black ${s.valColor}`}>{s.value ?? '—'}</p>
+              <p className={`text-xl sm:text-2xl font-black ${s.valColor}`}>{s.value ?? 'N/A'}</p>
               <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5 truncate">{s.label}</p>
             </div>
           </div>
@@ -240,7 +240,7 @@ export default function AdminAIDiagnosis() {
                         <p className="text-slate-400">{new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </td>
                       <td className="py-3 px-2">
-                        <p className="font-semibold text-slate-800 text-xs">{log.farmerId?.name || '—'}</p>
+                        <p className="font-semibold text-slate-800 text-xs">{log.farmerId?.name || 'N/A'}</p>
                         <p className="text-slate-400 text-[10px] font-mono">{log.farmerId?.email}</p>
                       </td>
                       <td className="py-3 px-2 font-semibold text-slate-800">{log.disease}</td>

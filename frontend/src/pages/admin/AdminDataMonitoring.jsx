@@ -25,7 +25,7 @@ const DATE_FILTERS = [
   { label: 'All',     value: 'all'   },
 ]
 
-const fmt = (v) => v != null ? Number(v).toFixed(1) : '—'
+const fmt = (v) => v != null ? Number(v).toFixed(1) : 'N/A'
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
 function ChartTooltip({ active, payload, label, unit, paramLabel }) {
@@ -105,7 +105,7 @@ function SensorLogsTab({ onTotalLoad }) {
     )
   }
 
-  // Data is already server-filtered — just build chart & table
+  // Data is already server-filtered, just build chart & table
   const chartData = [...readings].reverse().map(r => ({
     time:  new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     value: r[chartParam] ?? 0,
@@ -355,7 +355,7 @@ export default function AdminDataMonitoring() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Data Monitoring</h1>
           <p className="text-slate-400 text-sm mt-0.5">
-            Live IoT telemetry from all field nodes — Afgoye District
+            Live IoT telemetry from all field nodes, Afgoye District
             {totalReadings != null && (
               <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg">
                 <FiDatabase size={10} /> {totalReadings.toLocaleString()} total readings
