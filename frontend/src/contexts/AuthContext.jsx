@@ -2,17 +2,17 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import api from '../services/api'
 import { STORAGE_KEYS, ROLES, ROUTES } from '../utils/constants'
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+// Context
 const AuthContext = createContext(null)
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
+// Provider
 export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null)
   const [token,   setToken]   = useState(null)
   const [loading, setLoading] = useState(true)  // true on first mount while restoring session
   const [error,   setError]   = useState(null)
 
-  // ── Restore session from localStorage on app load ──────────────────────────
+  // Restore session from localStorage on app load
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN)
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  // ── Login ──────────────────────────────────────────────────────────────────
+  // Login
   const login = useCallback(async (email, password) => {
     setError(null)
     try {
@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  // ── Logout ─────────────────────────────────────────────────────────────────
+  // Logout
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEYS.TOKEN)
     localStorage.removeItem(STORAGE_KEYS.USER)
@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
-  // ── Refresh user profile ─────────────────────────────────────────────────────
+  // Refresh user profile
   // Picks up changes an admin made after login (e.g. a newly assigned sensorId)
   // without requiring the user to log out and back in.
   const refreshUser = useCallback(async () => {
@@ -72,12 +72,12 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  // ── Role helpers ───────────────────────────────────────────────────────────
+  // Role helpers
   const isAdmin  = user?.role === ROLES.ADMIN
   const isFarmer = user?.role === ROLES.FARMER
   const isAuthenticated = !!token && !!user
 
-  // ── Default route after login by role ─────────────────────────────────────
+  // Default route after login by role
   const getHomeRoute = useCallback(() => {
     if (!user) return ROUTES.LOGIN
     return user.role === ROLES.ADMIN
@@ -103,7 +103,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+// Hook
 // eslint-disable-next-line react-refresh/only-export-components -- standard context+hook co-location, not worth splitting
 export function useAuth() {
   const context = useContext(AuthContext)

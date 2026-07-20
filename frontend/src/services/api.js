@@ -1,14 +1,14 @@
 import axios from 'axios'
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants'
 
-// ─── Axios Instance ──────────────────────────────────────────────────────────
+// Axios Instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 })
 
-// ─── Request Interceptor: attach JWT token ────────────────────────────────────
+// Request Interceptor: attach JWT token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN)
@@ -18,7 +18,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// ─── Response Interceptor: handle 401 globally ───────────────────────────────
+// Response Interceptor: handle 401 globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
