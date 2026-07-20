@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   FiCpu, FiClock, FiFile, FiAlertCircle,
-  FiRefreshCw, FiUsers
+  FiRefreshCw, FiUsers, FiInfo, FiShield, FiCalendar, FiUser
 } from 'react-icons/fi'
 import api from '../../services/api'
 
@@ -20,6 +20,74 @@ const DATE_FILTERS = [
   { label: 'All',     value: 'all'   },
 ]
 
+// ─── Detail Modal ───────────────────────────────────────────────────────────
+function DetailModal({ log, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 overflow-hidden max-h-[85vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50 shrink-0">
+          <h3 className="text-sm font-bold text-slate-800">Scan Detail</h3>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 text-lg cursor-pointer transition-colors">×</button>
+        </div>
+
+        <div className="overflow-y-auto p-5 space-y-4">
+          {log.imageUrl ? (
+            <img src={log.imageUrl} alt={log.fileName} className="w-full h-48 object-cover rounded-2xl border border-slate-200" />
+          ) : (
+            <div className="w-full h-48 rounded-2xl border border-slate-200 bg-slate-100 flex items-center justify-center">
+              <FiFile className="w-8 h-8 text-slate-400" />
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <p className="text-xl font-extrabold text-slate-800">{log.disease}</p>
+            {getSeverityBadge(log.severity)}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <FiUser size={11} />
+              {log.farmerId?.name || 'N/A'}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <FiCalendar size={11} />
+              {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            <span className="font-bold font-mono text-emerald-700">{(log.confidence * 100).toFixed(0)}% confidence</span>
+          </div>
+
+          {log.treatment && (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="w-6 h-6 rounded-lg bg-emerald-200 flex items-center justify-center shrink-0">
+                  <FiInfo className="w-3.5 h-3.5 text-emerald-700" />
+                </div>
+                <p className="text-sm font-bold text-emerald-800 tracking-tight">Treatment Advisory</p>
+              </div>
+              <p className="text-sm text-slate-700 leading-relaxed pl-8">{log.treatment}</p>
+            </div>
+          )}
+
+          {log.prevention && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="w-6 h-6 rounded-lg bg-blue-200 flex items-center justify-center shrink-0">
+                  <FiShield className="w-3.5 h-3.5 text-blue-700" />
+                </div>
+                <p className="text-sm font-bold text-blue-800 tracking-tight">Prevention</p>
+              </div>
+              <p className="text-sm text-slate-700 leading-relaxed pl-8">{log.prevention}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminAIDiagnosis() {
   const [records,    setRecords]    = useState([])
   const [farmers,    setFarmers]    = useState([])
@@ -29,6 +97,7 @@ export default function AdminAIDiagnosis() {
 
   const [selectedFarmer, setSelectedFarmer] = useState('all')
   const [dateRange,      setDateRange]      = useState('today')
+  const [selectedLog,    setSelectedLog]    = useState(null)
 
   useEffect(() => {
     api.get('/auth/users')
@@ -62,6 +131,8 @@ export default function AdminAIDiagnosis() {
 
   return (
     <div className="page-container space-y-7">
+
+      {selectedLog && <DetailModal log={selectedLog} onClose={() => setSelectedLog(null)} />}
 
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -137,6 +208,14 @@ export default function AdminAIDiagnosis() {
               {DATE_FILTERS.find(d => d.value === dateRange)?.label}
             </p>
           </div>
+          {selectedFarmer !== 'all' && !loading && (
+            <div className="shrink-0 text-right">
+              <p className="text-lg font-black text-emerald-700">{records.length}</p>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                {selectedFarmerName} · {DATE_FILTERS.find(d => d.value === dateRange)?.label}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* ── Toolbar ──────────────────────────────────────────────────────── */}
@@ -213,7 +292,7 @@ export default function AdminAIDiagnosis() {
                     <th className="py-3 px-2">Image</th>
                     <th className="py-3 px-2">Date / Time</th>
                     <th className="py-3 px-2">Farmer</th>
-                    <th className="py-3 px-2">AI Diagnosis</th>
+                    <th className="py-3 px-2">Diagnosis</th>
                     <th className="py-3 px-2">Confidence</th>
                     <th className="py-3 px-2">Severity</th>
                     <th className="py-3 px-2">Model</th>
@@ -221,7 +300,7 @@ export default function AdminAIDiagnosis() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {records.map((log) => (
-                    <tr key={log._id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={log._id} onClick={() => setSelectedLog(log)} className="hover:bg-slate-50 transition-colors cursor-pointer">
                       <td className="py-3 px-2">
                         {log.imageUrl ? (
                           <img

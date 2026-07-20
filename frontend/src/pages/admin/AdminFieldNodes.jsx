@@ -334,7 +334,7 @@ export default function AdminFieldNodes() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
         {/* Node Cards */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="order-2 lg:order-1 lg:col-span-2 space-y-4">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
             Registered Nodes <span className="text-slate-300 font-normal normal-case">({sensors.length})</span>
           </p>
@@ -359,7 +359,7 @@ export default function AdminFieldNodes() {
         </div>
 
         {/* Register Form */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden lg:sticky lg:top-6">
+        <div className="order-1 lg:order-2 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden lg:sticky lg:top-6">
           <div className="px-5 py-4 bg-emerald-600">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white">
