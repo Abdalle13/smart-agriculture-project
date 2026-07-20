@@ -13,13 +13,16 @@ import {
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'
 
 export default function FarmerDashboard() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const navigate = useNavigate()
   const [readings, setReadings] = useState(null)
   const [recommendations, setRecommendations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState('')
+
+  // Pick up a sensor an admin assigned after this session started
+  useEffect(() => { refreshUser() }, [refreshUser])
 
   // Load latest reading once on mount
   useEffect(() => {
@@ -76,6 +79,9 @@ export default function FarmerDashboard() {
       </div>
     )
   }
+
+  const hasSensor = !!user?.sensorIds?.length
+  const hasData   = !!readings
 
   const getStatusLevel = (param, value) => {
     const limits = SENSOR_THRESHOLDS[param]
@@ -138,12 +144,23 @@ export default function FarmerDashboard() {
       </div>
 
       {/* ── No sensor assigned banner ── */}
-      {!user?.sensorIds?.length && (
+      {!hasSensor && (
         <div className="flex items-start gap-3 p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 text-sm">
           <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
           <div>
             <p className="font-semibold">No field node assigned to your account</p>
             <p className="text-amber-600 text-xs mt-0.5 font-normal">Contact your administrator to assign an IoT sensor probe to your farm.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Sensor assigned but no reading received yet ── */}
+      {hasSensor && !hasData && !error && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border bg-blue-50 border-blue-200 text-blue-800 text-sm">
+          <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-blue-500" />
+          <div>
+            <p className="font-semibold">Sensor connected, waiting for its first reading</p>
+            <p className="text-blue-600 text-xs mt-0.5 font-normal">Your field probe is registered, but hasn't sent any telemetry yet. Data will appear here automatically once it starts reporting.</p>
           </div>
         </div>
       )}
@@ -218,22 +235,28 @@ export default function FarmerDashboard() {
             <FiZap className="w-4 h-4 text-emerald-500" /> Intelligent Agronomic Advisory
           </h2>
 
-          <div className="space-y-3">
-            {recommendations.map((rec, index) => (
-              <div
-                key={index}
-                className={`${getAlertClass(rec.type)} flex items-start gap-3 p-4 rounded-xl border text-sm`}
-              >
-                {getRecIcon(rec.type)}
-                <div className="space-y-0.5">
-                  <p className="font-semibold text-xs uppercase tracking-wider">
-                    {rec.type === 'danger' ? 'Critical Alert' : rec.type === 'warning' ? 'Advisory Warning' : 'Optimal Condition'}
-                  </p>
-                  <p className="text-slate-600 text-sm mt-0.5 leading-relaxed font-normal">{rec.message}</p>
+          {hasData ? (
+            <div className="space-y-3">
+              {recommendations.map((rec, index) => (
+                <div
+                  key={index}
+                  className={`${getAlertClass(rec.type)} flex items-start gap-3 p-4 rounded-xl border text-sm`}
+                >
+                  {getRecIcon(rec.type)}
+                  <div className="space-y-0.5">
+                    <p className="font-semibold text-xs uppercase tracking-wider">
+                      {rec.type === 'danger' ? 'Critical Alert' : rec.type === 'warning' ? 'Advisory Warning' : 'Optimal Condition'}
+                    </p>
+                    <p className="text-slate-600 text-sm mt-0.5 leading-relaxed font-normal">{rec.message}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400 text-center py-8">
+              No advisory yet. This appears once your field probe sends its first reading.
+            </p>
+          )}
         </div>
 
         <div className="card space-y-4">

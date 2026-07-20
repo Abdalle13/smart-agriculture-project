@@ -104,6 +104,7 @@ export const getWeather = async (req, res) => {
       const desc = refItem.weather[0].description
       return {
         day:         i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : DAY_NAMES[date.getDay()],
+        date:        date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
         high:        Math.round(df.maxTemp),
         low:         Math.round(df.minTemp),
         icon:        getWeatherIcon(refItem.weather[0].id),

@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
         setUser(JSON.parse(storedUser))
       }
     } catch {
-      // corrupted storage — clear it
+      // corrupted storage, clear it
       localStorage.removeItem(STORAGE_KEYS.TOKEN)
       localStorage.removeItem(STORAGE_KEYS.USER)
     } finally {
@@ -58,6 +58,20 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  // ── Refresh user profile ─────────────────────────────────────────────────────
+  // Picks up changes an admin made after login (e.g. a newly assigned sensorId)
+  // without requiring the user to log out and back in.
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data: res } = await api.get('/auth/me')
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(res.user))
+      setUser(res.user)
+      return res.user
+    } catch {
+      return null
+    }
+  }, [])
+
   // ── Role helpers ───────────────────────────────────────────────────────────
   const isAdmin  = user?.role === ROLES.ADMIN
   const isFarmer = user?.role === ROLES.FARMER
@@ -82,6 +96,7 @@ export function AuthProvider({ children }) {
     isFarmer,
     login,
     logout,
+    refreshUser,
     getHomeRoute,
   }
 

@@ -24,11 +24,14 @@ const CustomTooltip = ({ active, payload, label, activeColor, unit }) => {
 }
 
 export default function FarmerSensors() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [activeParam, setActiveParam] = useState('nitrogen')
   const [timeFilter, setTimeFilter] = useState(12) // hours
   const [historyData, setHistoryData] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // Pick up a sensor an admin assigned after this session started
+  useEffect(() => { refreshUser() }, [refreshUser])
 
   useEffect(() => {
     const activeSensorId = user?.sensorIds?.[0]
@@ -187,10 +190,17 @@ export default function FarmerSensors() {
               <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300">
                 <FiActivity size={22} />
               </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-500">No data for this period</p>
-                <p className="text-xs text-slate-400 mt-0.5">No readings recorded in the last {timeFilter === 168 ? '7 days' : `${timeFilter} hours`}.</p>
-              </div>
+              {!user?.sensorIds?.length ? (
+                <div>
+                  <p className="text-sm font-semibold text-slate-500">No field sensor assigned</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Ask your administrator to assign an IoT probe to your farm.</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-semibold text-slate-500">No readings in this period</p>
+                  <p className="text-xs text-slate-400 mt-0.5">No data recorded in the last {timeFilter === 168 ? '7 days' : `${timeFilter} hours`}. Try a wider time range.</p>
+                </div>
+              )}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">

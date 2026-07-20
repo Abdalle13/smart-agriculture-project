@@ -54,7 +54,16 @@ export const loginUser = async (req, res) => {
 }
 
 /**
- * @desc    Register a new farmer access request (public — pending approval)
+ * @desc    Get the current logged-in user's fresh profile (e.g. sensorIds after an admin reassigns a node)
+ * @route   GET /api/auth/me
+ * @access  Private
+ */
+export const getMe = async (req, res) => {
+  res.json({ success: true, user: req.user })
+}
+
+/**
+ * @desc    Register a new farmer access request (public, pending approval)
  * @route   POST /api/auth/register
  * @access  Public
  */
@@ -112,7 +121,7 @@ export const getAllUsers = async (req, res) => {
 }
 
 /**
- * @desc    Toggle user active status (Admin only) — cannot self-deactivate
+ * @desc    Toggle user active status (Admin only, cannot self-deactivate)
  * @route   PUT /api/auth/users/:id/status
  * @access  Private/Admin
  */
@@ -144,7 +153,7 @@ export const updateUserStatus = async (req, res) => {
 }
 
 /**
- * @desc    Update user profile (Admin only) — cannot self-delete, cannot edit own role
+ * @desc    Update user profile (Admin only, cannot self-delete, cannot edit own role)
  * @route   PUT /api/auth/users/:id
  * @access  Private/Admin
  */
@@ -183,7 +192,7 @@ export const updateUser = async (req, res) => {
     if (role)      updateFields.role      = role
     if (sensorIds) updateFields.sensorIds = sensorIds
 
-    // Handle password change separately — needs hashing
+    // Handle password change separately, needs hashing
     if (password && password.length >= 6) {
       const salt = await bcrypt.genSalt(10)
       updateFields.password = await bcrypt.hash(password, salt)
@@ -237,7 +246,7 @@ export const createUser = async (req, res) => {
 }
 
 /**
- * @desc    Delete user (Admin only) — cannot delete self or other admins
+ * @desc    Delete user (Admin only, cannot delete self or other admins)
  * @route   DELETE /api/auth/users/:id
  * @access  Private/Admin
  */

@@ -158,13 +158,22 @@ export default function FarmerLayout() {
           </div>
 
           {/* Live status pill */}
-          <div className="hidden md:flex items-center gap-3 text-xs bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-emerald-700 font-medium">Monitoring active plot telemetry</span>
-          </div>
+          {user?.sensorIds?.length ? (
+            <div className="hidden md:flex items-center gap-3 text-xs bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl">
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="text-emerald-700 font-medium">
+                {nodeName ? `Monitoring ${nodeName}` : 'Monitoring active plot telemetry'}
+              </span>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-3 text-xs bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-400" />
+              <span className="text-slate-500 font-medium">No field sensor assigned</span>
+            </div>
+          )}
         </header>
 
         <main className="flex-1 overflow-y-auto bg-slate-50">

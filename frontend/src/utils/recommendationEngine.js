@@ -77,9 +77,10 @@ export const getSoilRecommendations = (readings) => {
  * Combined weather + soil advisory for the weather intelligence page.
  * @param {object} weather - Weather API response ({ current, forecast })
  * @param {object|null} soilReading - Latest soil telemetry (optional)
+ * @param {boolean} hasSensor - Whether a field probe is assigned to this farmer at all
  * @returns {array} [{ id, level: 'warning'|'danger'|'info'|'success', title, message }]
  */
-export const getWeatherAdvisory = (weather, soilReading = null) => {
+export const getWeatherAdvisory = (weather, soilReading = null, hasSensor = false) => {
   const tips = []
   const current  = weather?.current
   const forecast = weather?.forecast || []
@@ -124,15 +125,29 @@ export const getWeatherAdvisory = (weather, soilReading = null) => {
   }
 
   if (tips.length === 0) {
-    tips.push({
-      id: 'ok', level: 'success',
-      title: 'Optimal Farming Conditions',
-      message: 'Stable weather and soil conditions. Maintain standard watering and crop maintenance schedules.',
-    })
+    if (soilReading) {
+      tips.push({
+        id: 'ok', level: 'success',
+        title: 'Optimal Farming Conditions',
+        message: 'Stable weather and soil conditions. Maintain standard watering and crop maintenance schedules.',
+      })
+    } else if (hasSensor) {
+      tips.push({
+        id: 'no-data', level: 'info',
+        title: 'Waiting for Sensor Data',
+        message: 'Your field probe is connected but hasn\'t sent any readings yet. This advisory is based on weather alone for now. Soil-based tips will appear once it starts reporting.',
+      })
+    } else {
+      tips.push({
+        id: 'no-soil', level: 'info',
+        title: 'Weather-Only Advisory',
+        message: 'No field sensor is connected to your account yet, so this advisory is based on weather alone. Ask your administrator to assign a soil probe for full soil-based recommendations.',
+      })
+    }
   }
 
   return tips
 }
 
-// Legacy export — keeps FarmerDashboard import working without change
+// Legacy export, keeps FarmerDashboard import working without change
 export const getRecommendations = getSoilRecommendations

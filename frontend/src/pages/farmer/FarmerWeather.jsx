@@ -21,14 +21,28 @@ const WEATHER_ICONS = {
   'unknown':        WiNa,
 }
 
+const WEATHER_COLORS = {
+  'thunderstorm':   'text-indigo-600',
+  'drizzle':        'text-sky-400',
+  'rain':           'text-blue-500',
+  'snow':           'text-cyan-400',
+  'fog':            'text-slate-400',
+  'clear':          'text-amber-500',
+  'partly-cloudy':  'text-amber-400',
+  'cloudy':         'text-slate-400',
+  'overcast':       'text-slate-500',
+  'unknown':        'text-slate-300',
+}
+
 function WeatherIcon({ code, className }) {
-  const Icon = WEATHER_ICONS[code] || WiNa
-  return <Icon className={className} />
+  const Icon  = WEATHER_ICONS[code] || WiNa
+  const color = WEATHER_COLORS[code] || 'text-slate-400'
+  return <Icon className={`${className} ${color}`} />
 }
 
 
 export default function FarmerWeather() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [weather,     setWeather]     = useState(null)
   const [soilReading, setSoilReading] = useState(null)
   const [loading,     setLoading]     = useState(true)
@@ -37,6 +51,9 @@ export default function FarmerWeather() {
   const [refreshTick, setRefreshTick] = useState(0)
 
   const handleRefresh = () => setRefreshTick(t => t + 1)
+
+  // Pick up a sensor an admin assigned after this session started
+  useEffect(() => { refreshUser() }, [refreshUser])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -100,7 +117,7 @@ export default function FarmerWeather() {
     )
   }
 
-  const advisory = getWeatherAdvisory(weather, soilReading)
+  const advisory = getWeatherAdvisory(weather, soilReading, !!user?.sensorIds?.length)
 
   const getAlertClass = (lvl) => {
     if (lvl === 'warning') return 'bg-amber-50 border border-amber-200 text-amber-800'
@@ -136,20 +153,20 @@ export default function FarmerWeather() {
       {/* ── Grid: Current Conditions + Advisory ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Left 2 columns — Current weather */}
+        {/* Left 2 columns: Current weather */}
         <div className="lg:col-span-2 card space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="section-title">Current Microclimate Conditions</h2>
             <span className="text-xs text-slate-400 font-mono">
               Afgoye · {weather?.updatedAt
                 ? new Date(weather.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-                : '—'}
+                : 'N/A'}
             </span>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
             <div className="flex sm:flex-col items-center sm:items-start gap-3 sm:gap-1 w-full sm:w-auto">
-              <WeatherIcon code={weather?.current?.icon} className="w-16 h-16 sm:w-24 sm:h-24 text-emerald-600" />
+              <WeatherIcon code={weather?.current?.icon} className="w-16 h-16 sm:w-24 sm:h-24" />
               <div>
                 <p className="text-3xl sm:text-4xl font-extrabold text-slate-900">{weather?.current?.temp}°C</p>
                 <p className="text-sm text-emerald-600 font-bold uppercase tracking-wider">{weather?.current?.description}</p>
@@ -181,7 +198,7 @@ export default function FarmerWeather() {
           </div>
         </div>
 
-        {/* Right 1 column — Combined advisory */}
+        {/* Right 1 column: Combined advisory */}
         <div className="card space-y-4">
           <div className="border-b border-slate-100 pb-3">
             <h2 className="section-title">Agronomic Field Advisory</h2>
@@ -222,7 +239,8 @@ export default function FarmerWeather() {
               className="p-3 sm:p-4 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl text-center space-y-2 sm:space-y-3 transition-colors"
             >
               <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">{day.day}</p>
-              <WeatherIcon code={day.icon} className="w-9 h-9 sm:w-11 sm:h-11 mx-auto my-1 text-emerald-600" />
+              <p className="text-[9px] text-slate-400 font-mono">{day.date}</p>
+              <WeatherIcon code={day.icon} className="w-9 h-9 sm:w-11 sm:h-11 mx-auto my-1" />
               <div>
                 <p className="text-xs font-semibold text-emerald-700">{day.description}</p>
                 <p className="text-[10px] text-slate-400 font-medium mt-0.5">Rain: {day.rain}%</p>
