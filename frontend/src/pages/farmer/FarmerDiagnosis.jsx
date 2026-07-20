@@ -209,7 +209,6 @@ export default function FarmerDiagnosis() {
                 <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-emerald-500/50 rounded-2xl p-6 bg-slate-50 hover:bg-slate-100/50 transition-all cursor-pointer group">
                   <FiUpload className="w-10 h-10 text-slate-400 group-hover:text-emerald-500 transition-all" />
                   <p className="text-sm font-semibold text-slate-700 mt-3">Upload from gallery</p>
-                  <p className="text-xs text-slate-400 mt-1">JPEG, PNG, WebP — max 10 MB</p>
                   <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
                 </label>
 

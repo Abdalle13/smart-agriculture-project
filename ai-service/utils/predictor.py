@@ -227,7 +227,7 @@ def predict_disease(image_bytes: bytes) -> dict:
             "crop":       "Unknown",
             "confidence": round(confidence, 4),
             "severity":   "Unknown",
-            "treatment":  "This image doesn't clearly match any of the trained disease categories (mango, corn, pepper, potato, tomato). Retake a clear, well-lit photo of a single leaf, or consult an agronomist.",
+            "treatment":  "We couldn't identify a disease from this photo. Please take a new, clear photo of a single leaf from your crop (mango, corn, pepper, potato, or tomato), or ask your local agronomist for help.",
             "prevention": "Make sure the photo is a close-up of one leaf from a supported crop, in good lighting.",
             "model_used": "CNN",
         }
