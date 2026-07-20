@@ -3,17 +3,18 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ROUTES, APP_NAME } from '../utils/constants'
 import {
-  FiHome, FiActivity, FiCloud, FiCamera,
+  FiHome, FiActivity, FiCloud, FiCamera, FiClock,
   FiLogOut, FiMenu, FiX, FiMapPin, FiRadio
 } from 'react-icons/fi'
 import logo from '../assets/logo.svg'
 import api from '../services/api'
 
 const farmerNavItems = [
-  { path: ROUTES.FARMER_DASHBOARD, label: 'Field Dashboard',    Icon: FiHome     },
-  { path: ROUTES.FARMER_SENSORS,   label: 'Soil Probe Sensors', Icon: FiActivity },
-  { path: ROUTES.FARMER_WEATHER,   label: 'Weather Analytics',  Icon: FiCloud    },
-  { path: ROUTES.FARMER_DIAGNOSIS, label: 'Crop Disease Scan',  Icon: FiCamera   },
+  { path: ROUTES.FARMER_DASHBOARD,         label: 'Field Dashboard',    Icon: FiHome     },
+  { path: ROUTES.FARMER_SENSORS,           label: 'Soil Probe Sensors', Icon: FiActivity },
+  { path: ROUTES.FARMER_WEATHER,           label: 'Weather Analytics',  Icon: FiCloud    },
+  { path: ROUTES.FARMER_DIAGNOSIS,         label: 'Crop Disease Scan',  Icon: FiCamera   },
+  { path: ROUTES.FARMER_DIAGNOSIS_HISTORY, label: 'Scan History',       Icon: FiClock    },
 ]
 
 export default function FarmerLayout() {

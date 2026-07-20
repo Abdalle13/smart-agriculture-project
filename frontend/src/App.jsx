@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ROUTES, ROLES } from './utils/constants'
 
-// ── Lazy page imports (code-split per route) ──────────────────────────────────
+// Lazy page imports (code-split per route)
 import LoginPage       from './pages/auth/LoginPage'
 import RegisterPage    from './pages/auth/RegisterPage'
 
@@ -13,13 +13,14 @@ import AdminFieldNodes        from './pages/admin/AdminFieldNodes'
 import AdminDataMonitoring    from './pages/admin/AdminDataMonitoring'
 import AdminAIDiagnosis       from './pages/admin/AdminAIDiagnosis'
 
-import FarmerLayout    from './layouts/FarmerLayout'
-import FarmerDashboard from './pages/farmer/FarmerDashboard'
-import FarmerSensors   from './pages/farmer/FarmerSensors'
-import FarmerWeather   from './pages/farmer/FarmerWeather'
-import FarmerDiagnosis from './pages/farmer/FarmerDiagnosis'
+import FarmerLayout           from './layouts/FarmerLayout'
+import FarmerDashboard        from './pages/farmer/FarmerDashboard'
+import FarmerSensors          from './pages/farmer/FarmerSensors'
+import FarmerWeather          from './pages/farmer/FarmerWeather'
+import FarmerDiagnosis        from './pages/farmer/FarmerDiagnosis'
+import FarmerDiagnosisHistory from './pages/farmer/FarmerDiagnosisHistory'
 
-// ─── Loading Spinner ─────────────────────────────────────────────────────────
+// Loading Spinner
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-dark-900 flex flex-col items-center justify-center gap-4">
@@ -29,7 +30,7 @@ function LoadingScreen() {
   )
 }
 
-// ─── Protected Route Guard ────────────────────────────────────────────────────
+// Protected Route Guard
 function ProtectedRoute({ children, requiredRole }) {
   const { isAuthenticated, user, loading } = useAuth()
 
@@ -44,7 +45,7 @@ function ProtectedRoute({ children, requiredRole }) {
   return children
 }
 
-// ─── Public Route Guard (redirect if already logged in) ──────────────────────
+// Public Route Guard (redirect if already logged in)
 function PublicRoute({ children }) {
   const { isAuthenticated, user, loading } = useAuth()
   if (loading) return <LoadingScreen />
@@ -56,18 +57,18 @@ function PublicRoute({ children }) {
   return children
 }
 
-// ─── Router ───────────────────────────────────────────────────────────────────
+// Router
 function AppRouter() {
   return (
     <Routes>
-      {/* ── Root redirect ── */}
+      {/* Root redirect */}
       <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />
 
-      {/* ── Auth routes (public only) ── */}
+      {/* Auth routes (public only) */}
       <Route path={ROUTES.LOGIN}           element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path={ROUTES.REGISTER}        element={<PublicRoute><RegisterPage /></PublicRoute>} />
 
-      {/* ── Admin routes ── */}
+      {/* Admin routes */}
       <Route
         path="/admin"
         element={
@@ -84,7 +85,7 @@ function AppRouter() {
         <Route path="ai-diagnosis" element={<AdminAIDiagnosis />} />
       </Route>
 
-      {/* ── Farmer routes ── */}
+      {/* Farmer routes */}
       <Route
         path="/farmer"
         element={
@@ -94,19 +95,20 @@ function AppRouter() {
         }
       >
         <Route index element={<Navigate to={ROUTES.FARMER_DASHBOARD} replace />} />
-        <Route path="dashboard" element={<FarmerDashboard />} />
-        <Route path="sensors"   element={<FarmerSensors />} />
-        <Route path="weather"   element={<FarmerWeather />} />
-        <Route path="diagnosis" element={<FarmerDiagnosis />} />
+        <Route path="dashboard"         element={<FarmerDashboard />} />
+        <Route path="sensors"           element={<FarmerSensors />} />
+        <Route path="weather"           element={<FarmerWeather />} />
+        <Route path="diagnosis"         element={<FarmerDiagnosis />} />
+        <Route path="diagnosis/history" element={<FarmerDiagnosisHistory />} />
       </Route>
 
-      {/* ── 404 catch-all ── */}
+      {/* 404 catch-all */}
       <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
     </Routes>
   )
 }
 
-// ─── App Root ────────────────────────────────────────────────────────────────
+// App Root
 export default function App() {
   return (
     <BrowserRouter>

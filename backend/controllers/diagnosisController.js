@@ -60,13 +60,29 @@ export const createDiagnosis = async (req, res) => {
   }
 }
 
-// GET /api/diagnosis/my: farmer sees their own history
+// GET /api/diagnosis/my?range=today|7d|30d|all: farmer sees their own history
 export const getMyDiagnoses = async (req, res) => {
   try {
+    const { range = 'all' } = req.query
+    const filter = { farmerId: req.user._id }
+
+    if (range !== 'all') {
+      const now = new Date()
+      let cutoff
+      if (range === 'today') {
+        cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      } else if (range === '7d') {
+        cutoff = new Date(now - 7 * 24 * 60 * 60 * 1000)
+      } else if (range === '30d') {
+        cutoff = new Date(now - 30 * 24 * 60 * 60 * 1000)
+      }
+      if (cutoff) filter.createdAt = { $gte: cutoff }
+    }
+
     const diagnoses = await DiagnosisHistory
-      .find({ farmerId: req.user._id })
+      .find(filter)
       .sort({ createdAt: -1 })
-      .limit(50)
+      .limit(200)
 
     res.json({ success: true, count: diagnoses.length, data: diagnoses })
   } catch (error) {

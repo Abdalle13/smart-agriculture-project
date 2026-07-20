@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import {
   FiCamera, FiUpload, FiSearch, FiCpu, FiInfo, FiZoomIn,
-  FiFile, FiAlertCircle, FiX, FiCircle
+  FiAlertCircle, FiX, FiCircle, FiClock, FiChevronRight
 } from 'react-icons/fi'
 import api from '../../services/api'
+import { ROUTES } from '../../utils/constants'
 
 const getSeverityBadge = (sev) => {
   if (sev === 'High')    return <span className="badge-red">High Risk</span>
@@ -20,26 +22,12 @@ export default function FarmerDiagnosis() {
   const [scanStep,     setScanStep]     = useState(0)
   const [result,       setResult]       = useState(null)
   const [error,        setError]        = useState(null)
-  const [history,      setHistory]      = useState([])
-  const [historyError, setHistoryError] = useState(false)
 
   // Camera state
   const [cameraOpen,  setCameraOpen]  = useState(false)
   const [cameraError, setCameraError] = useState(null)
   const videoRef  = useRef(null)
   const streamRef = useRef(null)
-
-  const fetchHistory = useCallback(async () => {
-    try {
-      const { data } = await api.get('/diagnosis/my')
-      setHistory(data.data)
-      setHistoryError(false)
-    } catch {
-      setHistoryError(true)
-    }
-  }, [])
-
-  useEffect(() => { fetchHistory() }, [fetchHistory])
 
   // ── Camera ──────────────────────────────────────────────────────────────────
   const openCamera = async () => {
@@ -115,7 +103,6 @@ export default function FarmerDiagnosis() {
       })
 
       setResult(data.data)
-      await fetchHistory()
     } catch (err) {
       const msg = err.response?.data?.error || err.response?.data?.message || err.message
       if (err.code === 'ERR_NETWORK') {
@@ -184,9 +171,17 @@ export default function FarmerDiagnosis() {
       )}
 
       {/* ── Header ── */}
-      <div>
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">AI Crop Disease Diagnosis</h1>
-        <p className="text-slate-500 text-sm">Upload or photograph a leaf to run instant neural network health analysis</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">AI Crop Disease Diagnosis</h1>
+          <p className="text-slate-500 text-sm">Upload or photograph a leaf to run instant neural network health analysis</p>
+        </div>
+        <Link
+          to={ROUTES.FARMER_DIAGNOSIS_HISTORY}
+          className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-500 font-semibold text-sm rounded-xl transition-all cursor-pointer shadow-sm"
+        >
+          <FiClock size={13} /> View Scan History <FiChevronRight size={13} />
+        </Link>
       </div>
 
       {/* ── Diagnostic Section ── */}
@@ -323,68 +318,17 @@ export default function FarmerDiagnosis() {
             </div>
           ) : (
             <div className="min-h-[250px] flex flex-col items-center justify-center gap-2 text-center text-slate-400">
-              <FiZoomIn className="w-12 h-12 text-slate-300" />
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-emerald-400/15 blur-xl scale-150 animate-pulse" />
+                <div className="relative w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                  <FiZoomIn className="w-7 h-7 text-emerald-500" />
+                </div>
+              </div>
               <p className="text-sm font-semibold mt-3 text-slate-600">Ready for analysis</p>
               <p className="text-xs max-w-xs leading-relaxed">Upload a photo or use the camera to photograph the diseased leaf.</p>
             </div>
           )}
         </div>
-      </div>
-
-      {/* ── History Log ── */}
-      <div className="card space-y-4">
-        <h2 className="section-title border-b border-slate-100 pb-3">Crop Health Scanning History</h2>
-
-        {historyError ? (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-            <FiAlertCircle className="w-4 h-4 shrink-0" />
-            Failed to load scan history.
-            <button onClick={fetchHistory} className="ml-auto text-xs font-semibold text-red-700 hover:underline cursor-pointer">Retry</button>
-          </div>
-        ) : history.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-8">No scans yet. Upload or photograph a leaf to get started.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                  <th className="py-3 px-2">Image</th>
-                  <th className="py-3 px-2">Date</th>
-                  <th className="py-3 px-2">AI Diagnosis</th>
-                  <th className="py-3 px-2">Confidence</th>
-                  <th className="py-3 px-2">Severity</th>
-                  <th className="py-3 px-2">Model</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {history.map((log) => (
-                  <tr key={log._id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-2">
-                      {log.imageUrl ? (
-                        <img
-                          src={log.imageUrl}
-                          alt={log.fileName}
-                          className="w-12 h-12 object-cover rounded-xl border border-slate-200"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center">
-                          <FiFile className="w-4 h-4 text-slate-400" />
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-2 text-slate-500 font-mono text-xs whitespace-nowrap">
-                      {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="py-3 px-2 font-semibold text-slate-800">{log.disease}</td>
-                    <td className="py-3 px-2 font-bold font-mono text-emerald-700">{(log.confidence * 100).toFixed(0)}%</td>
-                    <td className="py-3 px-2">{getSeverityBadge(log.severity)}</td>
-                    <td className="py-3 px-2 text-slate-500 font-mono text-xs">{log.modelUsed}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
 
     </div>
