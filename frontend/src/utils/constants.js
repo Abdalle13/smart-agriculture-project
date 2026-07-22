@@ -22,6 +22,7 @@ export const ROUTES = {
   ADMIN_SENSORS:       '/admin/sensors',
   ADMIN_DATA_MONITOR:  '/admin/data-monitor',
   ADMIN_AI_DIAGNOSIS:  '/admin/ai-diagnosis',
+  ADMIN_SUPPORT:       '/admin/support',
 
   // Farmer
   FARMER_DASHBOARD:         '/farmer/dashboard',
@@ -29,6 +30,7 @@ export const ROUTES = {
   FARMER_WEATHER:           '/farmer/weather',
   FARMER_DIAGNOSIS:         '/farmer/diagnosis',
   FARMER_DIAGNOSIS_HISTORY: '/farmer/diagnosis/history',
+  FARMER_CONTACT:           '/farmer/contact',
 }
 
 // Sensor Thresholds (Afgoye district defaults)

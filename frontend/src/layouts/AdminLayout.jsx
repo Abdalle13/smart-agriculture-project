@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ROUTES, APP_NAME } from '../utils/constants'
 import {
-  FiGrid, FiUsers, FiRadio, FiBarChart2, FiZap,
-  FiLogOut, FiMenu, FiX, FiShield
+  FiGrid, FiUsers, FiRadio, FiBarChart2, FiZap, FiMessageSquare,
+  FiLogOut, FiMenu, FiX, FiShield, FiBell
 } from 'react-icons/fi'
 import logo from '../assets/logo.svg'
+import api from '../services/api'
 
 const adminNavItems = [
   { path: ROUTES.ADMIN_DASHBOARD,    label: 'Overview',            Icon: FiGrid      },
@@ -14,6 +15,7 @@ const adminNavItems = [
   { path: ROUTES.ADMIN_SENSORS,      label: 'Field Node Management', Icon: FiRadio     },
   { path: ROUTES.ADMIN_DATA_MONITOR, label: 'Data Monitoring',     Icon: FiBarChart2 },
   { path: ROUTES.ADMIN_AI_DIAGNOSIS, label: 'AI Diagnosis',        Icon: FiZap       },
+  { path: ROUTES.ADMIN_SUPPORT,      label: 'Support Messages',    Icon: FiMessageSquare },
 ]
 
 export default function AdminLayout() {
@@ -21,6 +23,13 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [openSupportCount, setOpenSupportCount] = useState(0)
+
+  useEffect(() => {
+    api.get('/contact/all?status=Open')
+      .then(res => setOpenSupportCount(res.data.data?.length || 0))
+      .catch(() => {})
+  }, [location.pathname])
 
   const handleLogout = () => {
     logout()
@@ -94,7 +103,12 @@ export default function AdminLayout() {
                 className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
               >
                 <Icon className="w-5 h-5 shrink-0" />
-                <span>{label}</span>
+                <span className="flex-1">{label}</span>
+                {path === ROUTES.ADMIN_SUPPORT && openSupportCount > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                    {openSupportCount}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -140,14 +154,18 @@ export default function AdminLayout() {
             <h2 className="text-lg font-bold text-slate-800">{getPageTitle()}</h2>
           </div>
 
-          {/* Live status pill */}
-          <div className="hidden md:flex items-center gap-3 text-xs bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-emerald-700 font-medium">Afgoye Control Center</span>
-          </div>
+          {/* Support notifications */}
+          <button
+            onClick={() => navigate(ROUTES.ADMIN_SUPPORT)}
+            className="relative flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all cursor-pointer"
+          >
+            <FiBell className="w-5 h-5" />
+            {openSupportCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {openSupportCount}
+              </span>
+            )}
+          </button>
         </header>
 
         <main className="flex-1 overflow-y-auto bg-slate-50">

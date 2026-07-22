@@ -143,7 +143,7 @@ export const updateUserStatus = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { isApproved: !existing.isApproved },
-      { new: true, runValidators: false }
+      { returnDocument: 'after', runValidators: false }
     )
 
     res.json({ success: true, user: updatedUser })
@@ -201,7 +201,7 @@ export const updateUser = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       updateFields,
-      { new: true, runValidators: false }
+      { returnDocument: 'after', runValidators: false }
     )
 
     res.json({ success: true, user: updatedUser })

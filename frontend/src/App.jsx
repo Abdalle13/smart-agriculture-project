@@ -12,6 +12,7 @@ import AdminFarmerManagement  from './pages/admin/AdminFarmerManagement'
 import AdminFieldNodes        from './pages/admin/AdminFieldNodes'
 import AdminDataMonitoring    from './pages/admin/AdminDataMonitoring'
 import AdminAIDiagnosis       from './pages/admin/AdminAIDiagnosis'
+import AdminSupportMessages   from './pages/admin/AdminSupportMessages'
 
 import FarmerLayout           from './layouts/FarmerLayout'
 import FarmerDashboard        from './pages/farmer/FarmerDashboard'
@@ -19,6 +20,7 @@ import FarmerSensors          from './pages/farmer/FarmerSensors'
 import FarmerWeather          from './pages/farmer/FarmerWeather'
 import FarmerDiagnosis        from './pages/farmer/FarmerDiagnosis'
 import FarmerDiagnosisHistory from './pages/farmer/FarmerDiagnosisHistory'
+import FarmerContact          from './pages/farmer/FarmerContact'
 
 // Loading Spinner
 function LoadingScreen() {
@@ -83,6 +85,7 @@ function AppRouter() {
         <Route path="sensors"      element={<AdminFieldNodes />} />
         <Route path="data-monitor" element={<AdminDataMonitoring />} />
         <Route path="ai-diagnosis" element={<AdminAIDiagnosis />} />
+        <Route path="support"      element={<AdminSupportMessages />} />
       </Route>
 
       {/* Farmer routes */}
@@ -100,6 +103,7 @@ function AppRouter() {
         <Route path="weather"           element={<FarmerWeather />} />
         <Route path="diagnosis"         element={<FarmerDiagnosis />} />
         <Route path="diagnosis/history" element={<FarmerDiagnosisHistory />} />
+        <Route path="contact"           element={<FarmerContact />} />
       </Route>
 
       {/* 404 catch-all */}

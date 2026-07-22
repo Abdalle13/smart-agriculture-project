@@ -3,8 +3,8 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ROUTES, APP_NAME } from '../utils/constants'
 import {
-  FiHome, FiActivity, FiCloud, FiCamera, FiClock,
-  FiLogOut, FiMenu, FiX, FiMapPin, FiRadio
+  FiHome, FiActivity, FiCloud, FiCamera, FiClock, FiMessageSquare,
+  FiLogOut, FiMenu, FiX, FiMapPin, FiRadio, FiBell
 } from 'react-icons/fi'
 import logo from '../assets/logo.svg'
 import api from '../services/api'
@@ -15,6 +15,7 @@ const farmerNavItems = [
   { path: ROUTES.FARMER_WEATHER,           label: 'Weather Analytics',  Icon: FiCloud    },
   { path: ROUTES.FARMER_DIAGNOSIS,         label: 'Crop Disease Scan',  Icon: FiCamera   },
   { path: ROUTES.FARMER_DIAGNOSIS_HISTORY, label: 'Scan History',       Icon: FiClock    },
+  { path: ROUTES.FARMER_CONTACT,           label: 'Contact Support',    Icon: FiMessageSquare },
 ]
 
 export default function FarmerLayout() {
@@ -23,6 +24,7 @@ export default function FarmerLayout() {
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [nodeName,   setNodeName]   = useState(null)
+  const [repliedCount, setRepliedCount] = useState(0)
 
   useEffect(() => {
     if (!user?.sensorIds?.length) return
@@ -33,6 +35,20 @@ export default function FarmerLayout() {
       })
       .catch(() => {})
   }, [user])
+
+  useEffect(() => {
+    api.get('/contact/my')
+      .then(res => {
+        const messages = res.data.data || []
+        const unseen = messages.filter(m => m.adminReply && !m.farmerSeen).length
+        setRepliedCount(unseen)
+
+        if (unseen > 0 && location.pathname === ROUTES.FARMER_CONTACT) {
+          api.patch('/contact/mark-seen').then(() => setRepliedCount(0)).catch(() => {})
+        }
+      })
+      .catch(() => {})
+  }, [location.pathname])
 
   const handleLogout = () => {
     logout()
@@ -158,23 +174,18 @@ export default function FarmerLayout() {
             <h2 className="text-lg font-bold text-slate-800">{getPageTitle()}</h2>
           </div>
 
-          {/* Live status pill */}
-          {user?.sensorIds?.length ? (
-            <div className="hidden md:flex items-center gap-3 text-xs bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl">
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          {/* Support notifications */}
+          <button
+            onClick={() => navigate(ROUTES.FARMER_CONTACT)}
+            className="relative flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all cursor-pointer"
+          >
+            <FiBell className="w-5 h-5" />
+            {repliedCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {repliedCount}
               </span>
-              <span className="text-emerald-700 font-medium">
-                {nodeName ? `Monitoring ${nodeName}` : 'Monitoring active plot telemetry'}
-              </span>
-            </div>
-          ) : (
-            <div className="hidden md:flex items-center gap-3 text-xs bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-xl">
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-400" />
-              <span className="text-slate-500 font-medium">No field sensor assigned</span>
-            </div>
-          )}
+            )}
+          </button>
         </header>
 
         <main className="flex-1 overflow-y-auto bg-slate-50">

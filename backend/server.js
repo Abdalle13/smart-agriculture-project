@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes.js'
 import sensorRegisterRoutes from './routes/sensorRegisterRoutes.js'
 import weatherRoutes from './routes/weatherRoutes.js'
 import diagnosisRoutes from './routes/diagnosisRoutes.js'
+import contactRoutes from './routes/contactRoutes.js'
 
 connectDB()
 
@@ -53,6 +54,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/sensors', sensorRegisterRoutes)
 app.use('/api/weather', weatherRoutes)
 app.use('/api/diagnosis', diagnosisRoutes)
+app.use('/api/contact', contactRoutes)
 
 // 404 Handler
 app.use((req, res) => {

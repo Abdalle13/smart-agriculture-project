@@ -207,7 +207,7 @@ export const updateSensor = async (req, res) => {
     const updated = await SensorRegister.findByIdAndUpdate(
       sensorId,
       { name, location, farmerId: newFarmerId },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     )
 
     res.json({ success: true, data: updated })

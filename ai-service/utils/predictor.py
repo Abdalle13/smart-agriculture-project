@@ -7,16 +7,16 @@ import tensorflow as tf
 
 MODEL_DIR = Path("./models")
 
-# ── Load CNN model and class names once on startup ────────────────────────────
+# Load CNN model and class names once on startup 
 cnn_model = tf.keras.models.load_model(MODEL_DIR / "cnn_best.keras")
 
 with open(MODEL_DIR / "class_names.json") as f:
     data = json.load(f)
     class_names = data["class_names"]   # JSON is {"class_names": [...], "num_classes": 27}
 
-# ── Treatment lookup — keys must match class_names.json exactly ───────────────
+# Treatment lookup — keys must match class_names.json exactly
 TREATMENT_MAP = {
-    # ── Mango (short class names from MangoLeafBD dataset) ───────────────────
+    # Mango (short class names from MangoLeafBD dataset)
     "Anthracnose": {
         "treatment": "Apply copper-based fungicides or mancozeb before and after flowering. Remove and destroy all infected fruits and leaves.",
         "severity": "High",
@@ -66,7 +66,7 @@ TREATMENT_MAP = {
         "crop": "Mango",
     },
 
-    # ── Corn ─────────────────────────────────────────────────────────────────
+    # ── Corn
     "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {
         "treatment": "Apply fungicides containing azoxystrobin or pyraclostrobin. Remove and destroy infected leaves. Practice strict crop rotation.",
         "severity": "Medium",
@@ -92,7 +92,7 @@ TREATMENT_MAP = {
         "crop": "Corn",
     },
 
-    # ── Pepper ────────────────────────────────────────────────────────────────
+    # ── Pepper
     "Pepper,_bell___Bacterial_spot": {
         "treatment": "Apply copper-based bactericides. Remove infected plant parts immediately. Avoid overhead irrigation.",
         "severity": "Medium",
@@ -106,7 +106,7 @@ TREATMENT_MAP = {
         "crop": "Pepper",
     },
 
-    # ── Potato ────────────────────────────────────────────────────────────────
+    # ── Potato
     "Potato___Early_blight": {
         "treatment": "Apply chlorothalonil or mancozeb fungicides. Remove infected leaves. Ensure adequate potassium levels in soil.",
         "severity": "Medium",
@@ -126,7 +126,7 @@ TREATMENT_MAP = {
         "crop": "Potato",
     },
 
-    # ── Tomato ───────────────────────────────────────────────────────────────
+    # ── Tomato
     "Tomato___Bacterial_spot": {
         "treatment": "Apply copper-based bactericides combined with mancozeb. Remove heavily infected leaves. Avoid wetting foliage during irrigation.",
         "severity": "Medium",
@@ -193,11 +193,11 @@ TREATMENT_MAP = {
 def _make_display_name(class_key: str) -> str:
     """Convert a class key to a human-readable disease name."""
     if "___" in class_key:
-        # PlantVillage style: "Tomato___Early_blight" → "Tomato – Early blight"
+        # PlantVillage style: "Tomato___Early_blight" → "Tomato Early blight"
         crop, disease = class_key.split("___", 1)
         crop    = crop.replace("_", " ").replace(",", "").strip()
         disease = disease.replace("_", " ").strip()
-        return f"{crop} – {disease}"
+        return f"{crop} {disease}"
     # Short-name style (Mango dataset): already human-readable
     return class_key
 
@@ -222,7 +222,7 @@ def predict_disease(image_bytes: bytes) -> dict:
 
     if confidence < CONFIDENCE_THRESHOLD:
         return {
-            "disease":    "Unrecognized — not a supported crop/disease",
+            "disease":    "Unrecognized not a supported crop/disease",
             "class_key":  None,
             "crop":       "Unknown",
             "confidence": round(confidence, 4),
