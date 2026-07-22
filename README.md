@@ -6,7 +6,7 @@
 
 ## Overview
 
-A full-stack MERN web platform connecting ESP32 soil probe hardware to a real-time farmer dashboard and admin control panel. Farmers in the **Afgoye district** can monitor live NPK, temperature, humidity, and soil moisture readings — and diagnose crop diseases using a CNN deep learning model.
+A full-stack MERN web platform connecting ESP32 soil probe hardware to a real-time farmer dashboard and admin control panel. Farmers in the **Afgoye district** can monitor live NPK, temperature, humidity, and soil moisture readings, diagnose crop diseases using a CNN deep learning model, and reach the admin team directly through an in-app support inbox.
 
 ---
 
@@ -249,6 +249,11 @@ The CNN model file is **not included** in this repository (too large for git).
 | GET    | `/api/diagnosis/my`          | Farmer       | Own diagnosis history                                                       |
 | GET    | `/api/diagnosis/all`         | Admin        | All diagnoses (filterable)                                                  |
 | GET    | `/api/diagnosis/stats`       | Admin        | Total and today count                                                       |
+| POST   | `/api/contact`               | Farmer       | Submit a support message (optional photo)                                   |
+| GET    | `/api/contact/my`            | Farmer       | Own support message history                                                 |
+| PATCH  | `/api/contact/mark-seen`     | Farmer       | Mark own replied messages as seen (clears notification badge)               |
+| GET    | `/api/contact/all`           | Admin        | All support messages (filterable by status/farmerId/category)               |
+| PATCH  | `/api/contact/:id`           | Admin        | Update status and/or reply to a support message                            |
 | POST   | `/predict` (port 8000)       | None         | `ai-service` — image → disease result (called by backend, not the frontend) |
 
 Full route tables with all fields: [`backend/README.md`](backend/README.md).
@@ -292,8 +297,9 @@ See [`backend/README.md`](backend/README.md), [`frontend/README.md`](frontend/RE
 - [x] Agronomic recommendation engine
 - [x] AI crop disease diagnosis (CNN — 27 classes)
 - [x] Diagnosis history (per-farmer + admin overview)
+- [x] Farmer support/contact system (categorized messages, admin replies, notification badges)
 - [ ] SMS/push alerts for critical sensor thresholds
-- [ ] Cloud deployment (Railway / Render)
+- [x] Cloud deployment (Vercel + Railway + MongoDB Atlas)
 
 ---
 

@@ -93,19 +93,22 @@ backend/
 │   ├── authController.js            Login, register, user CRUD
 │   ├── sensorRegisterController.js  Device registry + telemetry
 │   ├── weatherController.js         OpenWeatherMap proxy
-│   └── diagnosisController.js       Forwards images to ai-service, saves results
+│   ├── diagnosisController.js       Forwards images to ai-service, saves results
+│   └── contactController.js         Farmer support messages, admin replies
 ├── middleware/
 │   └── auth.js                  JWT protect + role authorize
 ├── models/
 │   ├── SensorRegister.js        Device registry (string _id: "s001")
 │   ├── Sensor.js                Time-series telemetry readings (TTL 30d)
 │   ├── User.js                  Farmer + admin accounts
-│   └── DiagnosisHistory.js      Saved AI diagnosis results
+│   ├── DiagnosisHistory.js      Saved AI diagnosis results
+│   └── Contact.js               Farmer support/contact messages
 ├── routes/
 │   ├── authRoutes.js
 │   ├── sensorRegisterRoutes.js  /api/sensors routes
 │   ├── weatherRoutes.js
-│   └── diagnosisRoutes.js       /api/diagnosis routes
+│   ├── diagnosisRoutes.js       /api/diagnosis routes
+│   └── contactRoutes.js         /api/contact routes
 ├── uploads/diagnoses/           Saved leaf images from diagnosis uploads
 ├── server.js                    Entry point — Express + Socket.io
 └── seed.js                      Database seeder
@@ -151,6 +154,15 @@ backend/
 |---|---|---|---|
 | GET | `/` | Farmer/Admin | Current + 5-day forecast (Afgoye) |
 
+### Contact/Support — `/api/contact`
+| Method | Route | Access | Description |
+|---|---|---|---|
+| POST | `/` | Farmer | Submit a support message (`multipart/form-data`, optional field `image`) |
+| GET | `/my` | Farmer | Own support message history |
+| PATCH | `/mark-seen` | Farmer | Mark own replied messages as seen (clears the notification badge) |
+| GET | `/all` | Admin | All support messages, filterable by `status`, `farmerId`, `category` |
+| PATCH | `/:id` | Admin | Update status and/or write a reply |
+
 ---
 
 ## Auth Middleware
@@ -184,6 +196,13 @@ All connected frontend clients receive this instantly — no polling needed.
 - `name`, `email`, `password` (bcrypt-hashed), `role` (admin/farmer)
 - `fieldName`, `location`, `sensorIds[]`
 - `isApproved` — public self-registrations start `false`; admin must approve before login works. Users created directly by an admin (`POST /users`) are approved immediately.
+
+**Contact** — farmer support/contact messages
+- `farmerId` (ref to `User`), `category` (Sensor Issue / Reading Problem / Crop Disease Scan / Account Issue / Node Request / Other), `subject`, `message`, `imageUrl` (optional, uploaded to ImageKit's `/support` folder)
+- `priority` — farmer self-flags the message as urgent ("this is serious, needs a fast reply")
+- `status` — `Open` / `In Progress` / `Resolved`, set by the admin
+- `adminReply` — the admin's written reply, shown back to the farmer
+- `farmerSeen` — defaults `true`; reset to `false` whenever `adminReply` is set, so the farmer's notification bell badge only counts replies they haven't opened yet. `PATCH /mark-seen` clears it back to `true` when the farmer views their messages — independent of `status`, so resolving a ticket doesn't hide unread replies and vice versa.
 
 ---
 

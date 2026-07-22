@@ -135,7 +135,7 @@ Upload a leaf image and get a disease prediction.
 ```json
 {
   "success": true,
-  "disease": "Tomato – Early blight",
+  "disease": "Tomato Early blight",
   "class_key": "Tomato___Early_blight",
   "crop": "Tomato",
   "confidence": 0.9231,
@@ -170,7 +170,7 @@ FastAPI auto-generates interactive API docs — no extra setup needed:
 
 - **Production model**: `models/cnn_best.keras` — CNN trained on 27 disease classes across 5 crops (mango, corn, pepper, potato, tomato), ~27 MB.
 - **Input**: 224×224 RGB images, pixel values normalized to 0.0–1.0 (`utils/predictor.py: preprocess_image`).
-- **Confidence threshold**: predictions below **60%** confidence are reported as `"Unrecognized — not a supported crop/disease"` instead of being forced into the closest class (`CONFIDENCE_THRESHOLD` in `predictor.py`).
+- **Confidence threshold**: predictions below **60%** confidence are reported as `"Unrecognized not a supported crop/disease"` instead of being forced into the closest class (`CONFIDENCE_THRESHOLD` in `predictor.py`).
 - **Class list**: `models/class_names.json` — ordered list of 27 class names; index order must match the model's output layer.
 - **Treatment/prevention data**: hardcoded per class in `utils/predictor.py: TREATMENT_MAP`.
 - **Thesis comparison models** (loaded for offline accuracy comparison only — not called by `/predict`): `knn_model.pkl` (~154 MB), `rf_model.pkl` (~462 MB), `svm_model.pkl` (~124 MB), `svm_scaler.pkl`.

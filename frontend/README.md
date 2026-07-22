@@ -75,19 +75,21 @@ frontend/src/
 ├── pages/
 │   ├── auth/
 │   │   ├── LoginPage.jsx
-│   │   ├── RegisterPage.jsx
-│   │   └── ForgotPassword.jsx
+│   │   └── RegisterPage.jsx
 │   ├── admin/
-│   │   ├── AdminOverview.jsx         Afgoye Control Center dashboard
+│   │   ├── AdminOverview.jsx         Farmer/node/diagnosis stats + charts
 │   │   ├── AdminFieldNodes.jsx       Sensor node registry management
 │   │   ├── AdminFarmerManagement.jsx User/farmer account management
 │   │   ├── AdminDataMonitoring.jsx   Historical telemetry charts
-│   │   └── AdminReports.jsx          Reports page
+│   │   ├── AdminAIDiagnosis.jsx      All farmers' AI diagnosis history, filterable
+│   │   └── AdminSupportMessages.jsx  Farmer support inbox — filter, reply, resolve
 │   └── farmer/
-│       ├── FarmerDashboard.jsx   Live soil metric cards (Socket.io)
-│       ├── FarmerSensors.jsx     Historical telemetry charts + CSV export
-│       ├── FarmerWeather.jsx     Afgoye weather + agronomic advisory
-│       └── FarmerDiagnosis.jsx   AI crop disease scan
+│       ├── FarmerDashboard.jsx        Live soil metric cards (Socket.io)
+│       ├── FarmerSensors.jsx          Historical telemetry charts + CSV export
+│       ├── FarmerWeather.jsx          Afgoye weather + agronomic advisory
+│       ├── FarmerDiagnosis.jsx        AI crop disease scan
+│       ├── FarmerDiagnosisHistory.jsx Own past scans, filterable + detail modal
+│       └── FarmerContact.jsx          Submit support messages, view admin replies
 ├── services/
 │   └── api.js                   Axios instance (auto JWT + 401 redirect)
 ├── utils/
@@ -101,18 +103,22 @@ frontend/src/
 
 ## Routing
 
-| Path                  | Role   | Page                      |
-| --------------------- | ------ | ------------------------- |
-| `/login`              | Public | Login                     |
-| `/register`           | Public | Register (farmer request) |
-| `/admin/dashboard`    | Admin  | Afgoye Control Center     |
-| `/admin/sensors`      | Admin  | Field node registry       |
-| `/admin/users`        | Admin  | Farmer management         |
-| `/admin/data-monitor` | Admin  | Data monitoring charts    |
-| `/farmer/dashboard`   | Farmer | Live field dashboard      |
-| `/farmer/sensors`     | Farmer | Telemetry charts + CSV    |
-| `/farmer/weather`     | Farmer | Weather intelligence      |
-| `/farmer/diagnosis`   | Farmer | AI crop diagnosis         |
+| Path                     | Role   | Page                      |
+| ------------------------ | ------ | ------------------------- |
+| `/login`                 | Public | Login                     |
+| `/register`              | Public | Register (farmer request) |
+| `/admin/dashboard`       | Admin  | Overview dashboard        |
+| `/admin/sensors`         | Admin  | Field node registry       |
+| `/admin/users`           | Admin  | Farmer management         |
+| `/admin/data-monitor`    | Admin  | Data monitoring charts    |
+| `/admin/ai-diagnosis`    | Admin  | AI diagnosis history      |
+| `/admin/support`         | Admin  | Support message inbox     |
+| `/farmer/dashboard`      | Farmer | Live field dashboard      |
+| `/farmer/sensors`        | Farmer | Telemetry charts + CSV    |
+| `/farmer/weather`        | Farmer | Weather intelligence      |
+| `/farmer/diagnosis`      | Farmer | AI crop diagnosis         |
+| `/farmer/diagnosis/history` | Farmer | Past scan history      |
+| `/farmer/contact`        | Farmer | Contact support           |
 
 Wrong-role access redirects to the user's own home, not a 403 page.
 
@@ -138,6 +144,15 @@ ESP32 posts reading → Backend emits 'newReading' → Dashboard updates instant
 
 On mount it fetches the latest reading via HTTP (initial load).
 Then `socket.on('newReading')` handles all subsequent live updates.
+
+---
+
+## Notifications
+
+Both layouts (`AdminLayout.jsx`, `FarmerLayout.jsx`) show a bell icon in the top-right header instead of a static status pill:
+
+- **Admin** — badge count = number of support messages still `Open` (`GET /contact/all?status=Open`). Click → Support Messages page.
+- **Farmer** — badge count = number of the farmer's own support messages with an unseen admin reply (`GET /contact/my`, filtered by `adminReply` set and `farmerSeen: false`). Click, or simply visiting `/farmer/contact`, marks them seen (`PATCH /contact/mark-seen`) and clears the badge — independent of whether the admin has marked the ticket `Resolved`.
 
 ---
 
