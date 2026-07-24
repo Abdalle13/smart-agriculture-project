@@ -12,12 +12,20 @@ import weatherRoutes from './routes/weatherRoutes.js'
 import diagnosisRoutes from './routes/diagnosisRoutes.js'
 import contactRoutes from './routes/contactRoutes.js'
 
+import { globalLimiter } from './middleware/rateLimiter.js'
+
 connectDB()
 
 const app = express()
 
+// Trust reverse proxies (Railway) for accurate client IP rate limiting
+app.set('trust proxy', 1)
+
 app.use(cors())
 app.use(express.json())
+
+// Apply Global Rate Limiter to all API routes
+app.use('/api', globalLimiter)
 
 // Create HTTP server wrapping Express
 const httpServer = createServer(app)

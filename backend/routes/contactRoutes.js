@@ -1,6 +1,7 @@
 import express from 'express'
 import multer from 'multer'
 import { protect, authorize } from '../middleware/auth.js'
+import { contactLimiter } from '../middleware/rateLimiter.js'
 import {
   createContact,
   getMyContacts,
@@ -13,7 +14,7 @@ const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage() })
 
 // Farmer
-router.post('/',    protect, authorize('farmer'), upload.single('image'), createContact)
+router.post('/', protect, authorize('farmer'), contactLimiter, upload.single('image'), createContact)
 router.get('/my',   protect, authorize('farmer'), getMyContacts)
 router.patch('/mark-seen', protect, authorize('farmer'), markContactsSeen)
 

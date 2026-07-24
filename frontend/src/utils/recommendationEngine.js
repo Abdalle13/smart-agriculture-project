@@ -74,76 +74,95 @@ export const getSoilRecommendations = (readings) => {
 }
 
 /**
- * Combined weather + soil advisory for the weather intelligence page.
+ * Pure weather-based agronomic advisory for the weather intelligence page.
  * @param {object} weather - Weather API response ({ current, forecast })
- * @param {object|null} soilReading - Latest soil telemetry (optional)
- * @param {boolean} hasSensor - Whether a field probe is assigned to this farmer at all
  * @returns {array} [{ id, level: 'warning'|'danger'|'info'|'success', title, message }]
  */
-export const getWeatherAdvisory = (weather, soilReading = null, hasSensor = false) => {
+export const getWeatherAdvisory = (weather) => {
   const tips = []
-  const current  = weather?.current
-  const forecast = weather?.forecast || []
-  const desc     = current?.description?.toLowerCase() || ''
+  if (!weather?.current) return tips
+
+  const current  = weather.current
+  const forecast = weather.forecast || []
+  const desc     = current.description?.toLowerCase() || ''
   const maxRain  = Math.max(forecast[0]?.rain || 0, forecast[1]?.rain || 0)
 
-  if (current?.temp >= 35) {
+  // 1. Heat & Thermal Stress
+  if (current.temp >= 35) {
     tips.push({
-      id: 'heat', level: 'warning',
+      id: 'heat-severe', level: 'warning',
       title: 'Extreme Heat Alert',
-      message: `Temperature is ${current?.temp}°C. Irrigate before 9AM and apply shading to young crops.`,
+      message: `High ambient temperature (${current.temp}°C). Irrigate early morning or evening to minimize evaporation loss.`,
     })
-  }
-
-  if (desc.includes('rain') || desc.includes('storm') || maxRain >= 70) {
+  } else if (current.temp >= 30) {
     tips.push({
-      id: 'rain', level: 'info',
-      title: 'Heavy Rain Alert',
-      message: `High rain probability detected (${maxRain}%). Ensure farm drainage channels are open to prevent waterlogging.`,
+      id: 'heat-moderate', level: 'info',
+      title: 'Warm Weather Notice',
+      message: `Temperature is ${current.temp}°C. Keep crop hydration steady.`,
     })
   }
 
-  if ((current?.windSpeed || 0) > 35) {
+  // 2. Rainfall & Storm Forecast
+  if (desc.includes('rain') || desc.includes('storm') || maxRain >= 60) {
     tips.push({
-      id: 'wind', level: 'warning',
-      title: 'High Wind Warning',
-      message: `Wind speed is ${current?.windSpeed} km/h. Secure lightweight irrigation equipment and crop covers.`,
+      id: 'rain-high', level: 'info',
+      title: 'Rain Forecast Alert',
+      message: `Precipitation expected (${maxRain}% chance). Clear field drainage channels to prevent waterlogging.`,
+    })
+  } else if (maxRain < 20 && current.temp > 28) {
+    tips.push({
+      id: 'dry-spell', level: 'info',
+      title: 'Dry Outlook',
+      message: `Low probability of rain over the next 48 hours. Plan scheduled irrigation accordingly.`,
     })
   }
 
-  if (soilReading) {
-    getSoilRecommendations(soilReading)
-      .filter(t => t.type !== 'success')
-      .forEach((t, i) => {
-        tips.push({
-          id: `soil-${i}`,
-          level: t.type === 'danger' ? 'danger' : 'warning',
-          title: 'Soil Advisory',
-          message: t.message,
-        })
-      })
+  // 3. Air Humidity & Fungal Risk
+  if (current.humidity > 80) {
+    tips.push({
+      id: 'humidity-high', level: 'warning',
+      title: 'High Air Humidity',
+      message: `Relative humidity is ${current.humidity}%. Elevated humidity increases leaf fungal disease risk. Inspect foliage.`,
+    })
+  } else if (current.humidity < 35) {
+    tips.push({
+      id: 'humidity-low', level: 'info',
+      title: 'Dry Air Notice',
+      message: `Air humidity is low (${current.humidity}%). Crop transpiration rate will be higher.`,
+    })
   }
 
+  // 4. Wind Speed & Field Operations
+  if ((current.windSpeed || 0) >= 30) {
+    tips.push({
+      id: 'wind-strong', level: 'warning',
+      title: 'Strong Wind Warning',
+      message: `Wind speed is ${current.windSpeed} km/h. Avoid pesticide/fertilizer spraying and secure lightweight farm covers.`,
+    })
+  }
+
+  // 5. 48-Hour Microclimate Outlook (Always included as a forward-looking guide)
+  const tomorrow = forecast[1] || forecast[0]
+  if (tomorrow) {
+    const rainMsg = tomorrow.rain >= 40
+      ? `Rain expected (${tomorrow.rain}% chance, ${tomorrow.description.toLowerCase()}) with highs near ${tomorrow.high}°C.`
+      : `Mostly ${tomorrow.description.toLowerCase()} with highs near ${tomorrow.high}°C and low rain probability (${tomorrow.rain}%).`
+
+    tips.push({
+      id: 'forecast-48h',
+      level: 'info',
+      title: '48-Hour Microclimate Outlook',
+      message: `${tomorrow.day}: ${rainMsg} (Note: Weather forecasts are probabilistic estimates, not 100% guaranteed. Recheck live conditions before major field work).`,
+    })
+  }
+
+  // 6. Default Favorable Conditions
   if (tips.length === 0) {
-    if (soilReading) {
-      tips.push({
-        id: 'ok', level: 'success',
-        title: 'Optimal Farming Conditions',
-        message: 'Stable weather and soil conditions. Maintain standard watering and crop maintenance schedules.',
-      })
-    } else if (hasSensor) {
-      tips.push({
-        id: 'no-data', level: 'info',
-        title: 'Waiting for Sensor Data',
-        message: 'Your field probe is connected but hasn\'t sent any readings yet. This advisory is based on weather alone for now. Soil-based tips will appear once it starts reporting.',
-      })
-    } else {
-      tips.push({
-        id: 'no-soil', level: 'info',
-        title: 'Weather-Only Advisory',
-        message: 'No field sensor is connected to your account yet, so this advisory is based on weather alone. Ask your administrator to assign a soil probe for full soil-based recommendations.',
-      })
-    }
+    tips.push({
+      id: 'weather-optimal', level: 'success',
+      title: 'Favorable Weather Conditions',
+      message: 'Stable temperatures and weather conditions. Excellent weather for routine field work and maintenance.',
+    })
   }
 
   return tips

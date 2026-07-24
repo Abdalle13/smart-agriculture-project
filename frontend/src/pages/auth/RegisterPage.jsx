@@ -19,16 +19,16 @@ const EyeIcon = ({ open }) => open ? (
 export default function RegisterPage() {
   const navigate = useNavigate()
 
-  const [name,            setName]            = useState('')
-  const [email,           setEmail]           = useState('')
-  const [password,        setPassword]        = useState('')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [fieldName,       setFieldName]       = useState('')
-  const [location,        setLocation]        = useState('Afgoye, Somalia')
-  const [showPass,        setShowPass]        = useState(false)
-  const [loading,         setLoading]         = useState(false)
-  const [isSuccess,       setIsSuccess]       = useState(false)
-  const [error,           setError]           = useState(null)
+  const [fieldName, setFieldName] = useState('')
+  const [location, setLocation] = useState('Afgoye, Somalia')
+  const [showPass, setShowPass] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -137,7 +137,7 @@ export default function RegisterPage() {
                       required
                       value={name}
                       onChange={(e) => { setName(e.target.value); setError(null) }}
-                      placeholder="e.g., Fadumo Warsame"
+                      placeholder="Enter your full name"
                       disabled={loading}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all text-sm outline-none"
                     />
@@ -154,7 +154,7 @@ export default function RegisterPage() {
                       required
                       value={email}
                       onChange={(e) => { setEmail(e.target.value); setError(null) }}
-                      placeholder="john.doe@gmail.com"
+                      placeholder="Enter your email address"
                       disabled={loading}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all text-sm outline-none"
                     />
@@ -173,7 +173,7 @@ export default function RegisterPage() {
                           required
                           value={password}
                           onChange={(e) => { setPassword(e.target.value); setError(null) }}
-                          placeholder="Min. 6 chars"
+                          placeholder="Enter your password"
                           disabled={loading}
                           className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all text-sm outline-none pr-9"
                         />
@@ -214,7 +214,7 @@ export default function RegisterPage() {
                       required
                       value={fieldName}
                       onChange={(e) => { setFieldName(e.target.value); setError(null) }}
-                      placeholder="e.g., Warsame South Field"
+                      placeholder="Gali magaca beerta"
                       disabled={loading}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all text-sm outline-none"
                     />
@@ -231,7 +231,7 @@ export default function RegisterPage() {
                       required
                       value={location}
                       onChange={(e) => { setLocation(e.target.value); setError(null) }}
-                      placeholder="Afgoye, Somalia"
+                      placeholder="e.g., Afgooye, Somalia"
                       disabled={loading}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all text-sm outline-none"
                     />

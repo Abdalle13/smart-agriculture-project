@@ -18,7 +18,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response Interceptor: handle 401 globally
+// Response Interceptor: handle 401 & 429 globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -28,6 +28,19 @@ api.interceptors.response.use(
       localStorage.removeItem(STORAGE_KEYS.USER)
       window.location.href = '/login'
     }
+
+    // Format 429 Too Many Requests response data
+    if (error.response?.status === 429) {
+      const data = error.response.data
+      let message = 'Too many requests. Please wait a moment and try again.'
+      if (typeof data === 'string') {
+        message = data
+      } else if (data?.message) {
+        message = data.message
+      }
+      error.response.data = { success: false, message }
+    }
+
     return Promise.reject(error)
   }
 )

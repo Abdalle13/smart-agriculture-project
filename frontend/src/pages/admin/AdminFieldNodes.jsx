@@ -80,7 +80,13 @@ function SensorCard({ sensor, users, onEdit, onDelete }) {
         <div className="space-y-1.5 mb-4 pl-1">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <FiMapPin size={11} className="text-slate-300 shrink-0" />
-            <span className="truncate">{sensor.location || <span className="text-slate-300 italic">No location set</span>}</span>
+            <span className="truncate">
+              {farmer ? (
+                farmer.location || farmer.fieldName || 'Farmer Field'
+              ) : (
+                <span className="text-slate-300 italic">Unassigned Location</span>
+              )}
+            </span>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <FiUser size={11} className="text-slate-300 shrink-0" />
@@ -120,7 +126,7 @@ export default function AdminFieldNodes() {
   const [editTarget, setEditTarget] = useState(null)
   const [showDelete, setShowDelete] = useState(null)
   const [submitting, setSubmitting] = useState(false)
-  const [form,       setForm]       = useState({ id: '', name: '', location: '', farmerId: '' })
+  const [form,       setForm]       = useState({ id: '', name: '', farmerId: '' })
 
   const showToast = (message, type = 'success') => setToast({ message, type })
 
@@ -159,11 +165,11 @@ export default function AdminFieldNodes() {
     try {
       const { data } = await api.post('/sensors', {
         _id: form.id.trim(), name: form.name.trim(),
-        location: form.location.trim(), farmerId: form.farmerId || null,
+        farmerId: form.farmerId || null,
       })
       if (data.success) {
         setSensors(prev => [...prev, data.data])
-        setForm({ id: '', name: '', location: '', farmerId: '' })
+        setForm({ id: '', name: '', farmerId: '' })
         showToast('Field node registered successfully.')
       }
     } catch (err) {
@@ -179,7 +185,7 @@ export default function AdminFieldNodes() {
     setSubmitting(true)
     try {
       const { data } = await api.patch(`/sensors/${editTarget._id}`, {
-        name: editTarget.name, location: editTarget.location,
+        name: editTarget.name,
         farmerId: editTarget.farmerId || null,
       })
       if (data.success) {
@@ -233,10 +239,6 @@ export default function AdminFieldNodes() {
             <Field label="Display Name">
               <input value={editTarget.name} required className={inputCls}
                 onChange={e => setEditTarget(p => ({ ...p, name: e.target.value }))} />
-            </Field>
-            <Field label="Location">
-              <input value={editTarget.location} className={inputCls}
-                onChange={e => setEditTarget(p => ({ ...p, location: e.target.value }))} />
             </Field>
             <Field label="Assigned Farmer">
               <select value={editTarget.farmerId || ''} className={`${inputCls} cursor-pointer`}
@@ -379,13 +381,8 @@ export default function AdminFieldNodes() {
                 className={`${inputCls} font-mono`} />
             </Field>
             <Field label="Display Name">
-              <input type="text" required placeholder="e.g., North Field Probe" value={form.name}
+              <input type="text" required placeholder="Sensor display name" value={form.name}
                 onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                className={inputCls} />
-            </Field>
-            <Field label="Location">
-              <input type="text" placeholder="e.g., East Sector Plot" value={form.location}
-                onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
                 className={inputCls} />
             </Field>
             <Field label="Assign to Farmer">

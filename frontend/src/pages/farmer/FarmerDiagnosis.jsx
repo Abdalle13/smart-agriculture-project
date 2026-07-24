@@ -295,7 +295,9 @@ export default function FarmerDiagnosis() {
                   <div className="w-6 h-6 rounded-lg bg-emerald-200 flex items-center justify-center shrink-0">
                     <FiInfo className="w-3.5 h-3.5 text-emerald-700" />
                   </div>
-                  <p className="text-sm font-bold text-emerald-800 tracking-tight">Agronomic Treatment Advisory</p>
+                  <p className="text-sm font-bold text-emerald-800 tracking-tight">
+                    {result.severity === 'Unknown' ? 'Recommended Action' : 'Agronomic Treatment Advisory'}
+                  </p>
                 </div>
                 <p className="text-sm text-slate-700 leading-relaxed pl-8">{result.treatment}</p>
               </div>
@@ -306,7 +308,9 @@ export default function FarmerDiagnosis() {
                     <div className="w-6 h-6 rounded-lg bg-blue-200 flex items-center justify-center shrink-0">
                       <FiInfo className="w-3.5 h-3.5 text-blue-700" />
                     </div>
-                    <p className="text-sm font-bold text-blue-800 tracking-tight">Prevention</p>
+                    <p className="text-sm font-bold text-blue-800 tracking-tight">
+                      {result.severity === 'Unknown' ? 'Photo Tips' : 'Prevention'}
+                    </p>
                   </div>
                   <p className="text-sm text-slate-700 leading-relaxed pl-8">{result.prevention}</p>
                 </div>

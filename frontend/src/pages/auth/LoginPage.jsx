@@ -122,7 +122,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(null) }}
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all text-sm outline-none pr-12"
                   />

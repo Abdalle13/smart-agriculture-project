@@ -42,50 +42,36 @@ function WeatherIcon({ code, className }) {
 
 
 export default function FarmerWeather() {
-  const { user, refreshUser } = useAuth()
-  const [weather,     setWeather]     = useState(null)
-  const [soilReading, setSoilReading] = useState(null)
-  const [loading,     setLoading]     = useState(true)
-  const [apiError,    setApiError]    = useState(null)
-
+  const [weather,   setWeather]   = useState(null)
+  const [loading,   setLoading]   = useState(true)
+  const [apiError,  setApiError]  = useState(null)
   const [refreshTick, setRefreshTick] = useState(0)
 
   const handleRefresh = () => setRefreshTick(t => t + 1)
-
-  // Pick up a sensor an admin assigned after this session started
-  useEffect(() => { refreshUser() }, [refreshUser])
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
       setApiError(null)
-      const sensorId = user?.sensorIds?.[0]
 
-      const calls = [api.get('/weather')]
-      if (sensorId) calls.push(api.get(`/sensors/${sensorId}/latest`))
-
-      const [weatherResult, sensorResult] = await Promise.allSettled(calls)
-
-      if (weatherResult.status === 'fulfilled') {
-        const res = weatherResult.value.data
-        if (res.success) setWeather(res.data)
-        else setApiError(res.message || 'Unknown error occurred')
-      } else {
+      try {
+        const { data: res } = await api.get('/weather')
+        if (res.success) {
+          setWeather(res.data)
+        } else {
+          setApiError(res.message || 'Unknown error occurred')
+        }
+      } catch (err) {
         setApiError('Could not reach weather service.')
+      } finally {
+        setLoading(false)
       }
-
-      if (sensorResult?.status === 'fulfilled') {
-        const res = sensorResult.value.data
-        if (res.success && res.data) setSoilReading(res.data)
-      }
-
-      setLoading(false)
     }
 
     fetchData()
     const timer = setInterval(fetchData, 5 * 60 * 1000)
     return () => clearInterval(timer)
-  }, [user, refreshTick])
+  }, [refreshTick])
 
   // ── Loading state ──────────────────────────────────────────────────────────
   if (loading) {
@@ -117,7 +103,7 @@ export default function FarmerWeather() {
     )
   }
 
-  const advisory = getWeatherAdvisory(weather, soilReading, !!user?.sensorIds?.length)
+  const advisory = getWeatherAdvisory(weather)
 
   const getAlertClass = (lvl) => {
     if (lvl === 'warning') return 'bg-amber-50 border border-amber-200 text-amber-800'

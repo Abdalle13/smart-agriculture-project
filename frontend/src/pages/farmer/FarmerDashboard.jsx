@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 import { io } from 'socket.io-client'
@@ -83,7 +83,14 @@ export default function FarmerDashboard() {
   const hasSensor = !!user?.sensorIds?.length
   const hasData   = !!readings
 
+  // 5-minute freshness check — if last reading is older than 5 mins, treat sensor as offline
+  const STALE_MS = 5 * 60 * 1000
+  const isStale = hasData && readings?.timestamp
+    ? (Date.now() - new Date(readings.timestamp).getTime()) > STALE_MS
+    : false
+
   const getStatusLevel = (param, value) => {
+    if (isStale) return 'offline'
     const limits = SENSOR_THRESHOLDS[param]
     if (!limits) return 'normal'
     if (param === 'moisture' || param === 'humidity') {
@@ -102,6 +109,7 @@ export default function FarmerDashboard() {
   }
 
   const getStatusBadge = (level) => {
+    if (level === 'offline')  return <span className="badge-slate">Offline</span>
     if (level === 'critical') return <span className="badge-red">Critical</span>
     if (level === 'warning')  return <span className="badge-amber">Warning</span>
     return <span className="badge-green">Optimal</span>
@@ -134,11 +142,17 @@ export default function FarmerDashboard() {
           </p>
         </div>
 
-        <div className="self-start sm:self-auto flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs">
-          <span className="live-dot" />
-          {lastUpdated
-            ? <span className="text-slate-600">Last sync: <strong className="text-emerald-700 font-mono">{lastUpdated}</strong></span>
-            : <span className="text-slate-400 italic">Waiting for ESP32 data…</span>
+        <div className={`self-start sm:self-auto flex items-center gap-2 border px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs ${
+          isStale
+            ? 'bg-red-50 border-red-200'
+            : 'bg-slate-100 border-slate-200'
+        }`}>
+          <span className={isStale ? 'w-2 h-2 rounded-full bg-red-500 shrink-0' : 'live-dot'} />
+          {isStale
+            ? <span className="text-red-600 font-semibold">Sensor offline. No data for 5+ min</span>
+            : lastUpdated
+              ? <span className="text-slate-600">Last sync: <strong className="text-emerald-700 font-mono">{lastUpdated}</strong></span>
+              : <span className="text-slate-400 italic">Waiting for ESP32 data…</span>
           }
         </div>
       </div>
@@ -147,9 +161,28 @@ export default function FarmerDashboard() {
       {!hasSensor && (
         <div className="flex items-start gap-3 p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 text-sm">
           <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <p className="font-semibold">No field node assigned to your account</p>
+              <p className="text-amber-600 text-xs mt-0.5 font-normal">Contact your administrator to assign an IoT sensor probe to your farm.</p>
+            </div>
+            <Link
+              to={ROUTES.FARMER_CONTACT}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-200/70 hover:bg-amber-200 px-3.5 py-1.5 rounded-lg transition-colors shrink-0 self-start sm:self-auto"
+            >
+              Contact Support &rarr;
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ── Sensor offline banner (stale data) ── */}
+      {hasSensor && hasData && isStale && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border bg-red-50 border-red-200 text-red-800 text-sm">
+          <FiAlertOctagon className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
           <div>
-            <p className="font-semibold">No field node assigned to your account</p>
-            <p className="text-amber-600 text-xs mt-0.5 font-normal">Contact your administrator to assign an IoT sensor probe to your farm.</p>
+            <p className="font-semibold">Sensor Offline. No Data Received</p>
+            <p className="text-red-600 text-xs mt-0.5 font-normal">Your ESP32 field probe has not sent any readings in the last 5 minutes. All values are reset to 0. Check device power and WiFi connection.</p>
           </div>
         </div>
       )}
@@ -176,10 +209,11 @@ export default function FarmerDashboard() {
       {/* ── Soil Metrics Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         {Object.entries(SENSOR_CONFIG).map(([key, cfg]) => {
-          const val = readings?.[key] ?? 0
+          // Show 0 when sensor is offline/stale
+          const val = isStale ? 0 : (readings?.[key] ?? 0)
           const statusLevel = getStatusLevel(key, val)
           const thresholds = SENSOR_THRESHOLDS[key]
-          const percent = Math.min(100, Math.max(0, ((val - thresholds.min) / (thresholds.max - thresholds.min)) * 100))
+          const percent = isStale ? 0 : Math.min(100, Math.max(0, ((val - thresholds.min) / (thresholds.max - thresholds.min)) * 100))
 
           return (
             <div key={key} className="card flex flex-col justify-between space-y-4 hover:-translate-y-0.5">
@@ -235,7 +269,18 @@ export default function FarmerDashboard() {
             <FiZap className="w-4 h-4 text-emerald-500" /> Intelligent Agronomic Advisory
           </h2>
 
-          {hasData ? (
+          {isStale ? (
+            // Sensor is offline: don't show recommendations based on 0 values
+            <div className="flex items-start gap-3 p-4 rounded-xl border bg-red-50 border-red-200 text-sm">
+              <FiAlertOctagon className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
+              <div className="space-y-0.5">
+                <p className="font-semibold text-xs uppercase tracking-wider text-red-700">Sensor Offline</p>
+                <p className="text-slate-600 text-sm mt-0.5 leading-relaxed font-normal">
+                  Advisory is unavailable while the sensor is offline. Reconnect your ESP32 field probe to resume monitoring.
+                </p>
+              </div>
+            </div>
+          ) : hasData ? (
             <div className="space-y-3">
               {recommendations.map((rec, index) => (
                 <div

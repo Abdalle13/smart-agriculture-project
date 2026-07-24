@@ -222,18 +222,18 @@ def predict_disease(image_bytes: bytes) -> dict:
 
     if confidence < CONFIDENCE_THRESHOLD:
         return {
-            "disease":    "Unrecognized not a supported crop/disease",
+            "disease":    "Unrecognized Crop or Disease",
             "class_key":  None,
             "crop":       "Unknown",
             "confidence": round(confidence, 4),
             "severity":   "Unknown",
-            "treatment":  "We couldn't identify a disease from this photo. Please take a new, clear photo of a single leaf from your crop (mango, corn, pepper, potato, or tomato), or ask your local agronomist for help.",
-            "prevention": "Make sure the photo is a close-up of one leaf from a supported crop, in good lighting.",
+            "treatment":  "We couldn't identify a disease from this photo. Please take a new, clear photo or contact your administrator for assistance.",
+            "prevention": "Ensure the photo is taken in good lighting and well-focused.",
             "model_used": "CNN",
         }
 
     info = TREATMENT_MAP.get(class_key, {
-        "treatment":  "Consult an agronomist for further analysis.",
+        "treatment":  "Consult your administrator for further analysis.",
         "severity":   "Unknown",
         "prevention": "Monitor the plant closely and document all symptoms.",
         "crop":       "Unknown",

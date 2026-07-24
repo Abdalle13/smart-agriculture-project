@@ -143,9 +143,9 @@ function UserForm({ editTarget, currentUserId, onSave, onClose }) {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Full Name" error={errors.name}>
+          <Field label="Farmer Name" error={errors.name}>
             <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
-              placeholder="e.g. Abukar Hassan"
+              placeholder="e.g. John Doe"
               className={`${inputCls} ${errors.name ? 'border-red-300 focus:ring-red-200' : 'border-slate-200'}`} />
           </Field>
           <Field label="Email Address" error={errors.email}>
@@ -175,9 +175,9 @@ function UserForm({ editTarget, currentUserId, onSave, onClose }) {
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Farm / Plot Name">
+          <Field label="Field Name">
             <input type="text" value={form.fieldName} onChange={e => set('fieldName', e.target.value)}
-              placeholder="e.g. Hassan North Field"
+              placeholder="e.g. Beerta Xasan"
               className={`${inputCls} border-slate-200`} />
           </Field>
           <Field label="Location">

@@ -41,7 +41,22 @@ export const getSensorHistory = async (req, res) => {
       createdAt: { $gte: timeThreshold }
     }).sort({ createdAt: 1 })
 
-    // Format data for Recharts charts
+    // If parameter === 'all', return all sensor metrics in full format for CSV export
+    if (parameter === 'all') {
+      const formattedAll = readings.map(r => ({
+        timestamp: r.createdAt,
+        time: new Date(r.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
+        nitrogen: r.nitrogen || 0,
+        phosphorus: r.phosphorus || 0,
+        potassium: r.potassium || 0,
+        temperature: r.temperature || 0,
+        humidity: r.humidity || 0,
+        moisture: r.moisture || 0,
+      }))
+      return res.json({ success: true, data: formattedAll })
+    }
+
+    // Format data for Recharts single parameter chart
     const formatted = readings.map(r => ({
       time: new Date(r.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       value: r[parameter] || 0

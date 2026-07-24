@@ -10,11 +10,12 @@ import {
   getAllReadings
 } from '../controllers/sensorRegisterController.js'
 import { protect, authorize } from '../middleware/auth.js'
+import { sensorReadingLimiter } from '../middleware/rateLimiter.js'
 
 const router = express.Router()
 
-// IoT hardware data submission route (Public, no auth needed)
-router.post('/readings', addReading)
+// IoT hardware data submission route (Public, rate limited to protect DB and server)
+router.post('/readings', sensorReadingLimiter, addReading)
 
 // Admin: all readings
 router.route('/readings/all')

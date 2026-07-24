@@ -127,6 +127,7 @@ body {
   .badge-red    { @apply badge bg-red-50      text-red-700     border border-red-200;     }
   .badge-blue   { @apply badge bg-blue-50     text-blue-700    border border-blue-200;    }
   .badge-gray   { @apply badge bg-slate-100   text-slate-500   border border-slate-200;   }
+  .badge-slate  { @apply badge bg-slate-200   text-slate-600   border border-slate-300;   }
 
   /* Section heading */
   .section-title {

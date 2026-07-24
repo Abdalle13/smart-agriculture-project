@@ -10,12 +10,13 @@ import {
   deleteUser
 } from '../controllers/authController.js'
 import { protect, authorize } from '../middleware/auth.js'
+import { authLimiter } from '../middleware/rateLimiter.js'
 
 const router = express.Router()
 
-//Public Routes
-router.post('/login', loginUser)
-router.post('/register', registerUser)
+// Public Routes (Rate limited to prevent brute-force attacks)
+router.post('/login', authLimiter, loginUser)
+router.post('/register', authLimiter, registerUser)
 
 //Current user
 router.get('/me', protect, getMe)

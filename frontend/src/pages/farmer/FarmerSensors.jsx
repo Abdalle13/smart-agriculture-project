@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   Tooltip, CartesianGrid
 } from 'recharts'
 import api from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
-import { SENSOR_CONFIG, SENSOR_THRESHOLDS } from '../../utils/constants'
+import { SENSOR_CONFIG, SENSOR_THRESHOLDS, ROUTES } from '../../utils/constants'
 import { FiDownload, FiAlertTriangle, FiActivity } from 'react-icons/fi'
 
 // Custom tooltip renderer for Recharts
@@ -55,29 +56,58 @@ export default function FarmerSensors() {
     fetchHistory()
   }, [user, activeParam, timeFilter])
 
-  // CSV Exporter
-  const handleExportCSV = () => {
-    const config = SENSOR_CONFIG[activeParam]
-    const unit = config?.unit || ''
+  const [exporting, setExporting] = useState(false)
 
-    // Header
-    const csvRows = [['Report: AgriSense Telemetry Export'], ['Parameter', config.label], ['Time Period', `Last ${timeFilter} Hours`], [''], ['Timestamp', 'Value', 'Unit']]
+  // Export ALL telemetry parameters to a single CSV file
+  const handleExportCSV = async () => {
+    const activeSensorId = user?.sensorIds?.[0]
+    if (!activeSensorId) return
 
-    // Rows
-    historyData.forEach(row => {
-      csvRows.push([row.time, row.value, unit])
-    })
+    setExporting(true)
+    try {
+      const { data: res } = await api.get(`/sensors/${activeSensorId}/history`, {
+        params: { parameter: 'all', hours: timeFilter }
+      })
+      const allRows = res.data || []
 
-    const csvContent = "data:text/csv;charset=utf-8,"
-      + csvRows.map(e => e.map(val => `"${val}"`).join(",")).join("\n")
+      // Build complete CSV headers
+      const csvRows = [
+        ['Report: AgriSense Complete Soil & Telemetry Log'],
+        ['Farmer Field', user?.fieldName || 'Active Field'],
+        ['Time Range', `Last ${timeFilter} Hours`],
+        ['Generated At', new Date().toLocaleString()],
+        [''],
+        ['Timestamp', 'Nitrogen (mg/kg)', 'Phosphorus (mg/kg)', 'Potassium (mg/kg)', 'Temperature (°C)', 'Air Humidity (%)', 'Soil Moisture (%)']
+      ]
 
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    link.setAttribute("download", `agrisense_${activeParam}_last_${timeFilter}h.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+      // Fill data rows
+      allRows.forEach(r => {
+        csvRows.push([
+          r.time,
+          r.nitrogen,
+          r.phosphorus,
+          r.potassium,
+          r.temperature,
+          r.humidity,
+          r.moisture
+        ])
+      })
+
+      const csvContent = "data:text/csv;charset=utf-8,"
+        + csvRows.map(e => e.map(val => `"${val}"`).join(",")).join("\n")
+
+      const encodedUri = encodeURI(csvContent)
+      const link = document.createElement("a")
+      link.setAttribute("href", encodedUri)
+      link.setAttribute("download", `agrisense_all_telemetry_${timeFilter}h.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err) {
+      console.error('Error exporting CSV:', err)
+    } finally {
+      setExporting(false)
+    }
   }
 
   const currentConfig = SENSOR_CONFIG[activeParam] || { color: '#059669', label: 'Telemetry', unit: '' }
@@ -95,10 +125,11 @@ export default function FarmerSensors() {
 
         <button
           onClick={handleExportCSV}
-          disabled={loading || historyData.length === 0}
-          className="btn-primary self-start sm:self-auto py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading || exporting || !user?.sensorIds?.length}
+          className="btn-primary self-start sm:self-auto py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          <FiDownload className="w-4 h-4" /> Export CSV Log
+          <FiDownload className="w-4 h-4" />
+          {exporting ? 'Exporting All...' : 'Export All CSV'}
         </button>
       </div>
 
@@ -106,9 +137,17 @@ export default function FarmerSensors() {
       {!user?.sensorIds?.length && (
         <div className="flex items-start gap-3 p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 text-sm">
           <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
-          <div>
-            <p className="font-semibold">No field node assigned to your account</p>
-            <p className="text-amber-600 text-xs mt-0.5 font-normal">Contact your administrator to assign an IoT sensor probe to your farm.</p>
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <p className="font-semibold">No field node assigned to your account</p>
+              <p className="text-amber-600 text-xs mt-0.5 font-normal">Contact your administrator to assign an IoT sensor probe to your farm.</p>
+            </div>
+            <Link
+              to={ROUTES.FARMER_CONTACT}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-200/70 hover:bg-amber-200 px-3.5 py-1.5 rounded-lg transition-colors shrink-0 self-start sm:self-auto"
+            >
+              Contact Support &rarr;
+            </Link>
           </div>
         </div>
       )}
