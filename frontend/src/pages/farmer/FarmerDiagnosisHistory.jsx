@@ -10,7 +10,7 @@ const getSeverityBadge = (sev) => {
   if (sev === 'Medium')  return <span className="badge-amber">Medium Risk</span>
   if (sev === 'Low')     return <span className="badge-blue">Low Risk</span>
   if (sev === 'Unknown') return <span className="badge-gray">Unrecognized</span>
-  return <span className="badge-green">None (Healthy)</span>
+  return <span className="badge-green">Healthy Crop</span>
 }
 
 const DATE_FILTERS = [

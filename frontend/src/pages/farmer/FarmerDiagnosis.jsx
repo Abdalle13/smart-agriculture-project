@@ -12,7 +12,7 @@ const getSeverityBadge = (sev) => {
   if (sev === 'Medium')  return <span className="badge-amber">Medium Risk</span>
   if (sev === 'Low')     return <span className="badge-blue">Low Risk</span>
   if (sev === 'Unknown') return <span className="badge-gray">Unrecognized</span>
-  return <span className="badge-green">None (Healthy)</span>
+  return <span className="badge-green">Healthy Crop</span>
 }
 
 export default function FarmerDiagnosis() {
@@ -199,6 +199,12 @@ export default function FarmerDiagnosis() {
           </div>
 
           <form onSubmit={handleUploadSubmit} className="space-y-4 flex-1 flex flex-col justify-between">
+            {/* ── Scanner Tip ── */}
+            <div className="p-3 bg-emerald-50 border border-emerald-200/80 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+              <span className="shrink-0 text-base">💡</span>
+              <span><strong>Scanner Tip:</strong> Take a clear close-up photo of a single leaf in bright natural light for best results.</span>
+            </div>
+
             {!previewUrl ? (
               <div className="flex-1 min-h-[220px] flex flex-col gap-3">
                 <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-emerald-500/50 rounded-2xl p-6 bg-slate-50 hover:bg-slate-100/50 transition-all cursor-pointer group">

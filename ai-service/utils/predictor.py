@@ -209,28 +209,61 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
     return np.expand_dims(img_array, axis=0)
 
 
-CONFIDENCE_THRESHOLD = 0.60  # below this, the image likely isn't one of the trained categories
+def is_plant_image(image_bytes: bytes) -> bool:
+    """
+    Heuristic check: rejects images that clearly are not plant/leaf photos.
+    Strategy: A leaf or crop image should have meaningful green channel presence.
+    Human faces, objects, or unrelated photos tend to fail this check.
+    Returns True if the image looks plant-like, False otherwise.
+    """
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    img = img.resize((128, 128))
+    arr = np.array(img, dtype=np.float32)
+
+    R = arr[:, :, 0]
+    G = arr[:, :, 1]
+    B = arr[:, :, 2]
+
+    # A pixel is "green-dominant" if Green > Red AND Green > Blue by a margin
+    green_dominant = np.sum((G > R + 10) & (G > B + 10))
+    total_pixels   = arr.shape[0] * arr.shape[1]
+    green_ratio    = green_dominant / total_pixels
+
+    # Leaf images typically have at least 8% green-dominant pixels
+    # Human faces / objects typically have < 3%
+    return green_ratio >= 0.08
+
+
+CONFIDENCE_THRESHOLD = 0.60  # below this, treated as unrecognized
+
+
+_UNRECOGNIZED = {
+    "disease":    "Unrecognized Crop or Disease",
+    "class_key":  None,
+    "crop":       "Unknown",
+    "severity":   "Unknown",
+    "treatment":  "We couldn't identify a disease from this photo. Please take a new, clear photo or contact your administrator for assistance.",
+    "prevention": "Ensure the photo is taken in good lighting and well-focused.",
+    "model_used": "CNN",
+}
 
 
 def predict_disease(image_bytes: bytes) -> dict:
-    img_tensor = preprocess_image(image_bytes)
+    # Step 1: Reject images that don't look like plant/leaf photos
+    if not is_plant_image(image_bytes):
+        return {**_UNRECOGNIZED, "confidence": 0.0}
+
+    # Step 2: Run CNN model
+    img_tensor  = preprocess_image(image_bytes)
     predictions = cnn_model.predict(img_tensor, verbose=0)
 
     confidence = float(np.max(predictions))
     class_idx  = int(np.argmax(predictions))
     class_key  = class_names[class_idx]
 
+    # Step 3: Confidence threshold guard
     if confidence < CONFIDENCE_THRESHOLD:
-        return {
-            "disease":    "Unrecognized Crop or Disease",
-            "class_key":  None,
-            "crop":       "Unknown",
-            "confidence": round(confidence, 4),
-            "severity":   "Unknown",
-            "treatment":  "We couldn't identify a disease from this photo. Please take a new, clear photo or contact your administrator for assistance.",
-            "prevention": "Ensure the photo is taken in good lighting and well-focused.",
-            "model_used": "CNN",
-        }
+        return {**_UNRECOGNIZED, "confidence": round(confidence, 4)}
 
     info = TREATMENT_MAP.get(class_key, {
         "treatment":  "Consult your administrator for further analysis.",
