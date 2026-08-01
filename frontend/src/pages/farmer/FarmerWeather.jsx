@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
-import { getWeatherAdvisory } from '../../utils/recommendationEngine'
-import { FiAlertTriangle, FiAlertOctagon, FiCheckCircle, FiInfo, FiRefreshCw } from 'react-icons/fi'
+import { FiRefreshCw, FiAlertTriangle, FiAlertOctagon, FiCheckCircle, FiInfo } from 'react-icons/fi'
 import {
   WiThunderstorm, WiSprinkle, WiRain, WiSnow, WiFog,
   WiDaySunny, WiDayCloudy, WiCloud, WiCloudy, WiNa,
@@ -42,10 +41,12 @@ function WeatherIcon({ code, className }) {
 
 
 export default function FarmerWeather() {
-  const [weather,   setWeather]   = useState(null)
-  const [loading,   setLoading]   = useState(true)
-  const [apiError,  setApiError]  = useState(null)
-  const [refreshTick, setRefreshTick] = useState(0)
+  const [weather,        setWeather]        = useState(null)
+  const [loading,        setLoading]        = useState(true)
+  const [apiError,       setApiError]       = useState(null)
+  const [refreshTick,    setRefreshTick]    = useState(0)
+  const [advisory,       setAdvisory]       = useState([])
+  const [advLoading,     setAdvLoading]     = useState(false)
 
   const handleRefresh = () => setRefreshTick(t => t + 1)
 
@@ -73,7 +74,29 @@ export default function FarmerWeather() {
     return () => clearInterval(timer)
   }, [refreshTick])
 
-  // ── Loading state ──────────────────────────────────────────────────────────
+  // Fetch backend agronomic advisory array whenever weather changes
+  useEffect(() => {
+    if (!weather?.current) return
+    const fetchAdvisory = async () => {
+      setAdvLoading(true)
+      try {
+        const { data } = await api.post('/advise/weather', {
+          current:  weather.current,
+          forecast: weather.forecast,
+        })
+        if (data.success && Array.isArray(data.advisory)) {
+          setAdvisory(data.advisory)
+        }
+      } catch {
+        setAdvisory([])
+      } finally {
+        setAdvLoading(false)
+      }
+    }
+    fetchAdvisory()
+  }, [weather])
+
+  // ── Loading state
   if (loading) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
@@ -85,7 +108,7 @@ export default function FarmerWeather() {
     )
   }
 
-  // ── Error state (no weather data at all) ──────────────────────────────────
+  // ── Error state (no weather data at all)
   if (!weather) {
     return (
       <div className="page-container">
@@ -103,13 +126,20 @@ export default function FarmerWeather() {
     )
   }
 
-  const advisory = getWeatherAdvisory(weather)
 
-  const getAlertClass = (lvl) => {
-    if (lvl === 'warning') return 'bg-amber-50 border border-amber-200 text-amber-800'
-    if (lvl === 'info')    return 'bg-blue-50 border border-blue-200 text-blue-800'
-    if (lvl === 'danger')  return 'bg-red-50 border border-red-200 text-red-800'
-    return 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+
+  const getAlertClass = (type) => {
+    if (type === 'danger')  return 'bg-red-50 border-red-200 text-red-800'
+    if (type === 'warning') return 'bg-amber-50 border-amber-200 text-amber-800'
+    if (type === 'info')    return 'bg-blue-50 border-blue-200 text-blue-800'
+    return 'bg-emerald-50 border-emerald-200 text-emerald-800'
+  }
+
+  const getAlertIcon = (type) => {
+    if (type === 'danger')  return <FiAlertOctagon className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
+    if (type === 'warning') return <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+    if (type === 'info')    return <FiInfo className="w-4 h-4 shrink-0 mt-0.5 text-blue-500" />
+    return <FiCheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
   }
 
   return (
@@ -184,33 +214,39 @@ export default function FarmerWeather() {
           </div>
         </div>
 
-        {/* Right 1 column: Combined advisory */}
+        {/* Right 1 column: Agronomic Advisory */}
         <div className="card space-y-4">
           <div className="border-b border-slate-100 pb-3">
             <h2 className="section-title">Agronomic Field Advisory</h2>
             <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-              Precipitation forecast · thermal stress analysis · irrigation scheduling
+              Real-time weather intelligence & field guidance
             </p>
           </div>
-          <div className="space-y-3.5">
-            {advisory.map(tip => (
-              <div
-                key={tip.id}
-                className={`p-4 rounded-xl border text-xs leading-relaxed ${getAlertClass(tip.level)}`}
-              >
-                <div className="flex items-start gap-2">
-                  {tip.level === 'danger'  && <FiAlertOctagon className="w-4 h-4 shrink-0 mt-0.5" />}
-                  {tip.level === 'warning' && <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />}
-                  {tip.level === 'info'    && <FiInfo className="w-4 h-4 shrink-0 mt-0.5" />}
-                  {tip.level === 'success' && <FiCheckCircle className="w-4 h-4 shrink-0 mt-0.5" />}
-                  <div>
-                    <p className="font-bold text-xs uppercase tracking-wide mb-1">{tip.title}</p>
-                    <p className="font-normal">{tip.message}</p>
+          {advLoading ? (
+            <div className="flex flex-col items-center justify-center w-full gap-2 py-6">
+              <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs text-slate-400">Syncing advisory...</p>
+            </div>
+          ) : advisory.length > 0 ? (
+            <div className="space-y-3">
+              {advisory.map((item, index) => (
+                <div
+                  key={index}
+                  className={`${getAlertClass(item.type)} flex items-start gap-3 p-3.5 rounded-xl border text-xs`}
+                >
+                  {getAlertIcon(item.type)}
+                  <div className="space-y-0.5">
+                    <p className="font-bold uppercase tracking-wider text-[11px]">{item.title}</p>
+                    <p className="text-slate-600 leading-relaxed font-normal">{item.message}</p>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400 text-center w-full py-6">
+              Advisory will appear once weather data loads.
+            </p>
+          )}
         </div>
 
       </div>

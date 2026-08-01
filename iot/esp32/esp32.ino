@@ -4,14 +4,14 @@
 #include <ModbusMaster.h>
 
 // WiFi credentials
-const char* ssid     = "SAHAN";
-const char* password = "612220575";
+const char* ssid     = "Cabdi";
+const char* password = "99999999";
 
 // Server URL — update to your machine's local IPv4 address
-// String serverName = "http://192.168.100.229:5000/api/sensors/readings";
+String serverName = "http://10.134.170.160:5000/api/sensors/readings";
 
 // Production (Railway backend) — comment the local line above and uncomment this one to go live
-String serverName = "https://hopeful-truth-production.up.railway.app/api/sensors/readings";
+// String serverName = "https://hopeful-truth-production.up.railway.app/api/sensors/readings";
 
 // DHT11 — temperature + air humidity (pin 14)
 #define DHTPIN 14
@@ -148,5 +148,5 @@ void loop() {
     Serial.println("WiFi unavailable. Skipping send.");
   }
 
-  delay(30000); // 30 seconds between readings
+  delay(5000); // 5 seconds for testing (change back to 30000 for production)
 }

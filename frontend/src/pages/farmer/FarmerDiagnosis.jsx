@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  FiCamera, FiUpload, FiSearch, FiCpu, FiInfo, FiZoomIn,
-  FiAlertCircle, FiX, FiCircle, FiClock, FiChevronRight
+  FiCamera, FiUpload, FiSearch, FiCpu, FiZoomIn,
+  FiAlertCircle, FiX, FiCircle, FiClock, FiChevronRight,
+  FiCheckCircle, FiAlertTriangle, FiShield, FiRefreshCw
 } from 'react-icons/fi'
 import api from '../../services/api'
 import { ROUTES } from '../../utils/constants'
@@ -15,13 +16,23 @@ const getSeverityBadge = (sev) => {
   return <span className="badge-green">Healthy Crop</span>
 }
 
+const getSeverityColor = (sev) => {
+  if (sev === 'High')    return { bg: 'bg-red-50',     border: 'border-red-200',     icon: 'text-red-500',     title: 'text-red-800'    }
+  if (sev === 'Medium')  return { bg: 'bg-amber-50',   border: 'border-amber-200',   icon: 'text-amber-500',   title: 'text-amber-800'  }
+  if (sev === 'Unknown') return { bg: 'bg-slate-50',   border: 'border-slate-200',   icon: 'text-slate-400',   title: 'text-slate-700'  }
+  if (sev === 'None')    return { bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'text-emerald-500', title: 'text-emerald-800'}
+  return                        { bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'text-emerald-500', title: 'text-emerald-800'}
+}
+
 export default function FarmerDiagnosis() {
   const [selectedFile, setSelectedFile] = useState(null)
   const [previewUrl,   setPreviewUrl]   = useState(null)
   const [scanning,     setScanning]     = useState(false)
-  const [scanStep,     setScanStep]     = useState(0)
+  const [progress,     setProgress]     = useState(0)
+  const [stepLabel,    setStepLabel]    = useState('')
   const [result,       setResult]       = useState(null)
   const [error,        setError]        = useState(null)
+  const progressRef = useRef(null)
 
   // Camera state
   const [cameraOpen,  setCameraOpen]  = useState(false)
@@ -29,7 +40,42 @@ export default function FarmerDiagnosis() {
   const videoRef  = useRef(null)
   const streamRef = useRef(null)
 
-  // ── Camera ──────────────────────────────────────────────────────────────────
+  // Animated progress bar while scanning
+  useEffect(() => {
+    if (scanning) {
+      setProgress(0)
+      let pct = 0
+      const steps = [
+        { label: 'Uploading image to server...',   target: 20, ms: 600  },
+        { label: 'Forwarding to AI model...',      target: 45, ms: 800  },
+        { label: 'Running CNN classification...', target: 70, ms: 1000 },
+        { label: 'Generating AI advisory...',      target: 90, ms: 2000 },
+      ]
+      let i = 0
+      const runStep = () => {
+        if (i >= steps.length) return
+        const { label, target, ms } = steps[i]
+        setStepLabel(label)
+        const inc = (target - pct) / (ms / 80)
+        const interval = setInterval(() => {
+          pct = Math.min(pct + inc, target)
+          setProgress(Math.round(pct))
+          if (pct >= target) {
+            clearInterval(interval)
+            i++
+            runStep()
+          }
+        }, 80)
+        progressRef.current = interval
+      }
+      runStep()
+    } else {
+      if (progressRef.current) clearInterval(progressRef.current)
+    }
+    return () => { if (progressRef.current) clearInterval(progressRef.current) }
+  }, [scanning])
+
+  // Camera
   const openCamera = async () => {
     setCameraError(null)
     setCameraOpen(true)
@@ -68,7 +114,7 @@ export default function FarmerDiagnosis() {
     }, 'image/jpeg', 0.92)
   }
 
-  // ── File upload ─────────────────────────────────────────────────────────────
+  // File upload
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -79,40 +125,34 @@ export default function FarmerDiagnosis() {
     }
   }
 
-  // ── Submit to backend (Node.js → FastAPI) ───────────────────────────────────
+  // Submit
   const handleUploadSubmit = async (e) => {
     e.preventDefault()
     if (!selectedFile) return
-
     setScanning(true)
-    setScanStep(1)
     setError(null)
-
     try {
-      await new Promise(r => setTimeout(r, 500))
-      setScanStep(2)
-      await new Promise(r => setTimeout(r, 500))
-      setScanStep(3)
-
       const formData = new FormData()
       formData.append('image', selectedFile)
-
       const { data } = await api.post('/diagnosis', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 30000,
+        timeout: 90000,
       })
-
+      setProgress(100)
+      setStepLabel('Natiijooyinka la heyay!')
+      await new Promise(r => setTimeout(r, 400))
       setResult(data.data)
     } catch (err) {
       const msg = err.response?.data?.error || err.response?.data?.message || err.message
       if (err.code === 'ERR_NETWORK') {
         setError('Connection failed. Make sure the backend and AI service are both running.')
+      } else if (err.code === 'ECONNABORTED') {
+        setError('Request timed out. Please try again.')
       } else {
         setError(msg || 'Diagnosis failed. Please try again.')
       }
     } finally {
       setScanning(false)
-      setScanStep(0)
     }
   }
 
@@ -121,7 +161,11 @@ export default function FarmerDiagnosis() {
     setPreviewUrl(null)
     setResult(null)
     setError(null)
+    setProgress(0)
+    setStepLabel('')
   }
+
+  const colors = result ? getSeverityColor(result.severity) : null
 
   return (
     <div className="page-container max-w-6xl mx-auto space-y-6">
@@ -133,13 +177,12 @@ export default function FarmerDiagnosis() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <FiCamera className="w-5 h-5 text-emerald-600" />
-                <span className="font-bold text-slate-800">Take Leaf Photo</span>
+                <span className="font-bold text-slate-800">Sawir Caleen ah Qaado</span>
               </div>
               <button onClick={closeCamera} className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-500 cursor-pointer transition-colors">
                 <FiX className="w-5 h-5" />
               </button>
             </div>
-
             <div className="relative bg-black">
               {cameraError ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center">
@@ -155,7 +198,6 @@ export default function FarmerDiagnosis() {
                 </div>
               )}
             </div>
-
             {!cameraError && (
               <div className="flex items-center justify-center py-5 bg-slate-50">
                 <button
@@ -173,7 +215,7 @@ export default function FarmerDiagnosis() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">AI Crop Disease Diagnosis</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Crop Disease Diagnosis</h1>
           <p className="text-slate-500 text-sm">Upload or photograph a leaf to run instant neural network health analysis</p>
         </div>
         <Link
@@ -184,11 +226,11 @@ export default function FarmerDiagnosis() {
         </Link>
       </div>
 
-      {/* ── Diagnostic Section ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* ── Main Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-        {/* Left: Scanner */}
-        <div className="card space-y-4 flex flex-col justify-between">
+        {/* ── LEFT: Scanner ── */}
+        <div className="card flex flex-col gap-4">
           <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
             <h2 className="section-title">Diagnostic Scanner</h2>
             {previewUrl && !scanning && (
@@ -198,18 +240,26 @@ export default function FarmerDiagnosis() {
             )}
           </div>
 
-          <form onSubmit={handleUploadSubmit} className="space-y-4 flex-1 flex flex-col justify-between">
-            {/* ── Scanner Tip ── */}
-            <div className="p-3 bg-emerald-50 border border-emerald-200/80 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
-              <span className="shrink-0 text-base">💡</span>
-              <span><strong>Scanner Tip:</strong> Take a clear close-up photo of a single leaf in bright natural light for best results.</span>
+          {/* Tip — only show when no image selected */}
+          {!previewUrl && (
+            <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+              <span className="shrink-0 text-base mt-0.5">⚠️</span>
+              <span>
+                <strong>Talo Muhiim ah:</strong> HAL CALEEN oo keli ah sawir — ha sawirin geed dhan. Kaamirada u soo dhowee (10–20 cm) oo caleenta si cad u muuji.
+              </span>
             </div>
+          )}
 
+          <form onSubmit={handleUploadSubmit} className="flex flex-col gap-4">
+
+            {/* Image area */}
             {!previewUrl ? (
-              <div className="flex-1 min-h-[220px] flex flex-col gap-3">
-                <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-emerald-500/50 rounded-2xl p-6 bg-slate-50 hover:bg-slate-100/50 transition-all cursor-pointer group">
-                  <FiUpload className="w-10 h-10 text-slate-400 group-hover:text-emerald-500 transition-all" />
-                  <p className="text-sm font-semibold text-slate-700 mt-3">Upload from gallery</p>
+              <div className="flex flex-col gap-3">
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-emerald-500/50 rounded-2xl p-8 bg-slate-50 hover:bg-slate-100/50 transition-all cursor-pointer group min-h-[220px]">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <FiUpload className="w-6 h-6 text-emerald-500" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-700">Upload from gallery</p>
                   <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
                 </label>
 
@@ -222,35 +272,42 @@ export default function FarmerDiagnosis() {
                 <button
                   type="button"
                   onClick={openCamera}
-                  className="w-full flex items-center justify-center gap-2 py-3 border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-sm rounded-2xl transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-sm rounded-2xl transition-all cursor-pointer"
                 >
                   <FiCamera className="w-4 h-4" />
                   Take Photo with Camera
                 </button>
               </div>
             ) : (
-              <div className="relative flex-1 min-h-[220px] bg-slate-50 rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center">
-                <img src={previewUrl} alt="Crop preview" className="max-h-[300px] w-full object-contain" />
-                {scanning && <div className="absolute inset-0 bg-emerald-500/20 animate-pulse pointer-events-none" />}
+              /* Preview image — fills the card nicely */
+              <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50" style={{ aspectRatio: '4/3' }}>
+                <img src={previewUrl} alt="Crop preview" className="w-full h-full object-cover" />
+                {scanning && (
+                  <div className="absolute inset-0 bg-emerald-500/10 backdrop-blur-[1px] flex flex-col items-center justify-center gap-3">
+                    <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+                    <p className="text-sm font-bold text-emerald-900 bg-white/80 px-3 py-1 rounded-lg">{stepLabel}</p>
+                  </div>
+                )}
               </div>
             )}
 
+            {/* Progress bar */}
             {scanning && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div className="flex justify-between text-xs text-emerald-700 font-bold uppercase tracking-wider">
-                  <span>
-                    {scanStep === 1 && 'Uploading image to server...'}
-                    {scanStep === 2 && 'Forwarding to AI model...'}
-                    {scanStep === 3 && 'Running classification...'}
-                  </span>
-                  <span>{Math.round(scanStep * 33.3)}%</span>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span className="font-medium">{stepLabel}</span>
+                  <span className="font-bold text-emerald-700">{progress}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-600 rounded-full transition-all duration-300" style={{ width: `${scanStep * 33.3}%` }} />
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
                 </div>
               </div>
             )}
 
+            {/* Error */}
             {error && (
               <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
                 <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -258,89 +315,108 @@ export default function FarmerDiagnosis() {
               </div>
             )}
 
-            {!result && !scanning && (
-              <button type="submit" disabled={!selectedFile} className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed">
+            {/* Action buttons */}
+            {previewUrl && !scanning && !result && (
+              <button type="submit" className="btn-primary w-full py-3.5 text-sm font-bold">
                 <FiSearch className="w-4 h-4" /> Analyze Crop Health
+              </button>
+            )}
+            {previewUrl && !scanning && result && (
+              <button type="button" onClick={triggerReset} className="btn-secondary w-full py-3 text-sm flex items-center justify-center gap-2">
+                <FiRefreshCw className="w-4 h-4" /> Scan Another Leaf
               </button>
             )}
           </form>
         </div>
 
-        {/* Right: AI Output */}
-        <div className="card space-y-4">
+        {/* ── RIGHT: Result ── */}
+        <div className="card flex flex-col gap-4">
           <h2 className="section-title border-b border-slate-100 pb-3">Diagnosis Output</h2>
 
           {scanning ? (
-            <div className="min-h-[250px] flex flex-col items-center justify-center gap-3 text-center">
-              <FiCpu className="w-10 h-10 text-emerald-600 animate-pulse" />
-              <p className="text-sm font-semibold text-emerald-700">Classifying patterns...</p>
-              <p className="text-xs text-slate-500 max-w-xs">AI is comparing color histograms and leaf lesions against 27 disease classes</p>
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 py-16 text-center">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-emerald-400/20 blur-2xl scale-150 animate-pulse" />
+                <FiCpu className="relative w-12 h-12 text-emerald-600 animate-pulse" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-700">AI model is analyzing...</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-xs">{stepLabel}</p>
+              </div>
+              <div className="w-48 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-400">Please wait — this may take 10–30 seconds</p>
             </div>
+
           ) : result ? (
             <div className="space-y-4 animate-fade-in">
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500 font-mono">Model: {result.modelUsed}</span>
+
+              {/* Disease / Condition Card */}
+              <div className={`p-4 ${colors.bg} border ${colors.border} rounded-2xl`}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Detected Condition</p>
                   {getSeverityBadge(result.severity)}
                 </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase">Detected Disease / Condition</p>
-                  <p className="text-2xl font-extrabold text-slate-800 mt-1">{result.disease}</p>
-                  {result.crop && (
-                    <p className="text-xs text-slate-500 mt-1">Crop: <span className="font-semibold">{result.crop}</span></p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-bold uppercase">Confidence Score</p>
-                  <p className="text-lg font-bold text-emerald-700 mt-0.5">{(result.confidence * 100).toFixed(0)}% Match</p>
-                </div>
+                <p className="text-xl font-extrabold text-slate-800 leading-snug">{result.disease}</p>
+                {result.crop && result.crop !== 'Unknown' && (
+                  <p className="text-xs text-slate-500 mt-1.5">
+                    Crop: <span className="font-semibold text-slate-700">{result.crop}</span>
+                  </p>
+                )}
               </div>
 
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-200 flex items-center justify-center shrink-0">
-                    <FiInfo className="w-3.5 h-3.5 text-emerald-700" />
-                  </div>
-                  <p className="text-sm font-bold text-emerald-800 tracking-tight">
-                    {result.severity === 'Unknown' ? 'Recommended Action' : 'Agronomic Treatment Advisory'}
+              {/* Treatment */}
+              <div className={`p-4 ${colors.bg} border ${colors.border} rounded-2xl`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {result.severity === 'None'
+                    ? <FiCheckCircle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
+                    : result.severity === 'Unknown'
+                    ? <FiAlertCircle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
+                    : <FiAlertTriangle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
+                  }
+                  <p className={`text-xs font-bold uppercase tracking-wider ${colors.title}`}>
+                    {result.severity === 'Unknown' ? 'Xaaladda Sawirka'
+                     : result.severity === 'None'  ? 'Xaaladda Geedka'
+                     : 'Daaweynta Cudurka'}
                   </p>
                 </div>
-                <p className="text-sm text-slate-700 leading-relaxed pl-8">{result.treatment}</p>
+                <p className="text-sm text-slate-700 leading-relaxed">{result.treatment}</p>
               </div>
 
+              {/* Prevention */}
               {result.prevention && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <div className="w-6 h-6 rounded-lg bg-blue-200 flex items-center justify-center shrink-0">
-                      <FiInfo className="w-3.5 h-3.5 text-blue-700" />
-                    </div>
-                    <p className="text-sm font-bold text-blue-800 tracking-tight">
-                      {result.severity === 'Unknown' ? 'Photo Tips' : 'Prevention'}
+                  <div className="flex items-center gap-2 mb-2">
+                    <FiShield className="w-4 h-4 shrink-0 text-blue-500" />
+                    <p className="text-xs font-bold uppercase tracking-wider text-blue-800">
+                      {result.severity === 'Unknown' ? 'Sida Sawir Fiican Loo Qaado'
+                       : result.severity === 'None'  ? 'Xaaladda Wanaagsan u Sii Wad'
+                       : 'Ka Hortaga Cudurka'}
                     </p>
                   </div>
-                  <p className="text-sm text-slate-700 leading-relaxed pl-8">{result.prevention}</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{result.prevention}</p>
                 </div>
               )}
-
-              <button onClick={triggerReset} className="w-full btn-secondary py-2.5 text-xs">
-                Scan Another Leaf
-              </button>
             </div>
+
           ) : (
-            <div className="min-h-[250px] flex flex-col items-center justify-center gap-2 text-center text-slate-400">
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 text-center text-slate-400">
               <div className="relative">
                 <div className="absolute inset-0 rounded-full bg-emerald-400/15 blur-xl scale-150 animate-pulse" />
                 <div className="relative w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
                   <FiZoomIn className="w-7 h-7 text-emerald-500" />
                 </div>
               </div>
-              <p className="text-sm font-semibold mt-3 text-slate-600">Ready for analysis</p>
+              <p className="text-sm font-semibold mt-1 text-slate-600">Ready for analysis</p>
               <p className="text-xs max-w-xs leading-relaxed">Upload a photo or use the camera to photograph the diseased leaf.</p>
             </div>
           )}
         </div>
       </div>
-
     </div>
   )
 }

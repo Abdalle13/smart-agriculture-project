@@ -1,290 +1,161 @@
-# AgriSense AI Service
+# AgriSense AI Service 🌿🤖
 
-FastAPI microservice for crop disease detection using a CNN deep learning model.  
-Accepts a leaf image and returns the detected disease, confidence score, severity, and treatment advice.
+FastAPI microservice for **Crop Disease Detection** and **Agronomic Advisory** using a **MobileNetV2 CNN Deep Learning Model** and **Google Gemini Generative AI (`gemini-flash-latest`)**.
 
 ---
 
-## Folder Structure
+## 🌟 Overview & AI Usage
+
+This microservice combines computer vision and generative AI to provide localized agricultural assistance to farmers:
+
+### 1. 🎯 Leaf Disease Classification (CNN MobileNetV2)
+- **Model**: MobileNetV2 Deep Learning Convolutional Neural Network trained on plant leaf datasets.
+- **Accuracy**: 97.92% test accuracy across 27 plant disease classes.
+- **Warm-Up Pipeline**: Automatically runs a warm-up tensor pass on server startup so predictions return instantly (~0.5–1s).
+- **Validation Guardrails**:
+  - Green-ratio thresholding rejects non-plant images (e.g. people, cars, animals).
+  - Confidence thresholding (`CONFIDENCE_THRESHOLD = 0.60`) prevents false positive predictions on blurry or multi-object photos.
+
+### 2. 💡 Generative AI Treatment & Prevention Advisory (Google Gemini)
+- **SDK**: `google-genai` official Python SDK.
+- **Model**: `gemini-flash-latest`.
+- **Function**: Automatically generates localized, easy-to-understand Somali treatment and prevention advisories for diagnosed crop diseases.
+- **Async Execution**: Gemini API calls are run in an asynchronous thread executor (`asyncio.run_in_executor`), ensuring the FastAPI event loop is non-blocking.
+
+---
+
+## 📁 Folder Structure
 
 ```
 ai-service/
-├── main.py               FastAPI app — POST /predict, GET /
-├── requirements.txt      Python dependencies
+├── main.py               # FastAPI application & routes (/predict, /advise/weather, /advise/soil, /)
+├── requirements.txt      # Python dependencies
+├── .env                  # Environment variables (GEMINI_API_KEY)
 ├── models/
-│   ├── cnn_best.keras    CNN model (production)
-│   ├── class_names.json  Ordered list of 27 class names
-│   ├── knn_model.pkl     KNN model (thesis comparison)
-│   ├── rf_model.pkl      Random Forest model (thesis comparison)
-│   ├── svm_model.pkl     SVM model (thesis comparison)
-│   └── svm_scaler.pkl    SVM feature scaler
+│   ├── cnn_best.keras    # Production MobileNetV2 CNN model (28 MB)
+│   └── class_names.json  # 27 plant disease class mappings
 └── utils/
     ├── __init__.py
-    └── predictor.py      Image preprocessing + CNN inference + treatment lookup
+    └── predictor.py      # Preprocessing, CNN inference, validation checks, and Gemini AI advisor
 ```
 
-> `knn_model.pkl`, `rf_model.pkl`, `svm_model.pkl` are used only for thesis accuracy comparison — not called in production.
+---
 
-> **Git tracking:** only `cnn_best.keras` (28 MB) and `class_names.json` are committed to this repo — they're the two files `predictor.py` actually loads. The `.pkl` thesis-comparison files (up to 463 MB each) are excluded via `.gitignore` since they exceed GitHub's size limits and aren't needed to run the service. Cloning the repo is enough to get everything `main.py` needs.
+## ⚙️ Setup & Installation
+
+### Prerequisites
+- **Python 3.10 or 3.11** installed
+- **Google Gemini API Key** from [Google AI Studio](https://aistudio.google.com)
 
 ---
 
-## Requirements
+### Step 1: Create Virtual Environment
 
-- Python 3.11
-- All dependencies in `requirements.txt`
-
----
-
-## Setup
-
-### 1. Create and activate a virtual environment
+Open a terminal in the `ai-service` directory:
 
 ```bash
+cd ai-service
 py -3.11 -m venv .venv
-.\.venv\Scripts\Activate
 ```
 
-Confirm the prompt shows `(.venv)` before continuing — otherwise dependencies install to (and uvicorn runs from) the system Python instead of this project's enadvironment.
+Activate the virtual environment:
+- **Windows (PowerShell)**:
+  ```powershell
+  .\.venv\Scripts\Activate.ps1
+  ```
+- **Windows (CMD)**:
+  ```cmd
+  .\.venv\Scripts\activate.bat
+  ```
+- **Linux/macOS**:
+  ```bash
+  source .venv/bin/activate
+  ```
 
-### 2. Install dependencies
+---
+
+### Step 2: Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Start the server
+---
 
-```bash
-uvicorn main:app --port 8000 --reload
+### Step 3: Configure Environment Variables
+
+Create or edit the `.env` file inside `ai-service/`:
+
+```env
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
 ```
-
-Server runs at `http://localhost:8000`
-
-> Each new terminal session needs `.\.venv\Scripts\Activate` run again before `uvicorn` — activation does not persist across terminals.
 
 ---
 
-## Development Commands
+### Step 4: Run the AI Service
 
 ```bash
-# Activate the virtual environment (run in every new terminal)
-.\.venv\Scripts\Activate
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-# Start with hot-reload (auto-restarts on file changes)
-uvicorn main:app --port 8000 --reload
+When started, you should see:
+```text
+✅ CNN model warmed up — first prediction will be instant.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+```
 
-# Start without hot-reload
-uvicorn main:app --port 8000
+The service is now live at `http://localhost:8000`.
 
-# Test the health check endpoint
-curl http://localhost:8000
+---
 
-# Test a prediction with a sample image
+## 📡 API Endpoints
+
+### 1. `GET /`
+- **Description**: Health check endpoint.
+- **Response**:
+  ```json
+  {
+    "status": "ok",
+    "service": "AgriSense AI Microservice",
+    "engine": "CNN MobileNetV2 (97.92%) + Gemini Flash AI Advisor"
+  }
+  ```
+
+### 2. `POST /predict`
+- **Description**: Upload a leaf photo for instant crop disease classification and Somali advisory generation.
+- **Payload**: `multipart/form-data` with `file` (image file).
+- **Response Example**:
+  ```json
+  {
+    "success": true,
+    "disease": "Tomato Target Spot",
+    "class_key": "Tomato___Target_Spot",
+    "crop": "Tomato",
+    "confidence": 0.8754,
+    "severity": "Medium",
+    "treatment": "Daaweynta cudurka...",
+    "prevention": "Ka hortaga cudurka...",
+    "model_used": "CNN (MobileNetV2)",
+    "model_accuracy": "97.92%"
+  }
+  ```
+
+### 3. `POST /advise/weather`
+- **Description**: Generate weather agronomic advice via Gemini AI.
+- **Payload**: `{ "current": {...}, "forecast": [...] }`
+
+### 4. `POST /advise/soil`
+- **Description**: Generate soil NPK and moisture advice via Gemini AI.
+- **Payload**: `{ "nitrogen": 40, "phosphorus": 15, "potassium": 18, "moisture": 30 }`
+
+---
+
+## 🧪 Testing with Curl
+
+```bash
+# Health check
+curl http://localhost:8000/
+
+# Test disease diagnosis with an image
 curl -X POST http://localhost:8000/predict -F "file=@path/to/leaf.jpg"
-
-# Deactivate the virtual environment
-deactivate
 ```
-
----
-
-## VS Code
-
-Point VS Code at this project's virtual environment so imports (`fastapi`, `tensorflow`, etc.) resolve correctly and the debugger/test tools use the right interpreter:
-
-1. `Ctrl+Shift+P` → **Python: Select Interpreter**
-2. Choose `.\ai-service\.venv\Scripts\python.exe`
-3. Confirm the bottom-right status bar shows the `.venv` interpreter, not a system-wide Python
-
-Recommended extensions: **Python** (`ms-python.python`), **Pylance**.
-
-The integrated terminal does not auto-activate the virtual environment for existing panels — run `.\.venv\Scripts\Activate` in any new terminal before using `uvicorn` or `pip`.
-
----
-
-## Endpoints
-
-### `GET /`
-
-Health check.
-
-**Response:**
-
-```json
-{
-  "status": "ok",
-  "service": "AgriSense AI"
-}
-```
-
----
-
-### `POST /predict`
-
-Upload a leaf image and get a disease prediction.
-
-**Request:** `multipart/form-data`
-
-| Field  | Type       | Description                    |
-| ------ | ---------- | ------------------------------ |
-| `file` | image file | JPEG, PNG, or WebP — max 10 MB |
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "disease": "Tomato Early blight",
-  "class_key": "Tomato___Early_blight",
-  "crop": "Tomato",
-  "confidence": 0.9231,
-  "severity": "Medium",
-  "treatment": "Apply chlorothalonil or copper fungicides...",
-  "prevention": "Mulch soil surface and use drip irrigation...",
-  "model_used": "AgriCNN v1.0"
-}
-```
-
-**Error responses:**
-
-| Status | Reason                |
-| ------ | --------------------- |
-| `400`  | Unsupported file type |
-| `400`  | File exceeds 10 MB    |
-| `400`  | Empty file            |
-| `500`  | Model inference error |
-
----
-
-## API Documentation
-
-FastAPI auto-generates interactive API docs — no extra setup needed:
-
-- **Swagger UI**: `http://localhost:8000/docs` — try requests directly from the browser
-- **ReDoc**: `http://localhost:8000/redoc` — read-only reference view
-
----
-
-## Model Information
-
-- **Production model**: `models/cnn_best.keras` — CNN trained on 27 disease classes across 5 crops (mango, corn, pepper, potato, tomato), ~27 MB.
-- **Input**: 224×224 RGB images, pixel values normalized to 0.0–1.0 (`utils/predictor.py: preprocess_image`).
-- **Confidence threshold**: predictions below **60%** confidence are reported as `"Unrecognized not a supported crop/disease"` instead of being forced into the closest class (`CONFIDENCE_THRESHOLD` in `predictor.py`).
-- **Class list**: `models/class_names.json` — ordered list of 27 class names; index order must match the model's output layer.
-- **Treatment/prevention data**: hardcoded per class in `utils/predictor.py: TREATMENT_MAP`.
-- **Thesis comparison models** (loaded for offline accuracy comparison only — not called by `/predict`): `knn_model.pkl` (~154 MB), `rf_model.pkl` (~462 MB), `svm_model.pkl` (~124 MB), `svm_scaler.pkl`.
-
----
-
-## Supported Classes (27 total)
-
-### Mango — 8 classes
-
-| Class            | Severity |
-| ---------------- | -------- |
-| Anthracnose      | High     |
-| Bacterial Canker | High     |
-| Cutting Weevil   | Medium   |
-| Die Back         | High     |
-| Gall Midge       | Medium   |
-| Powdery Mildew   | Medium   |
-| Sooty Mould      | Low      |
-| Healthy          | None     |
-
-### Corn — 4 classes
-
-| Class                                                  | Severity |
-| ------------------------------------------------------ | -------- |
-| Corn\_(maize)\_\_\_Cercospora_leaf_spot Gray_leaf_spot | Medium   |
-| Corn\_(maize)_\_\_Common_rust_                         | Medium   |
-| Corn\_(maize)\_\_\_Northern_Leaf_Blight                | High     |
-| Corn\_(maize)\_\_\_healthy                             | None     |
-
-### Pepper — 2 classes
-
-| Class                             | Severity |
-| --------------------------------- | -------- |
-| Pepper,\_bell\_\_\_Bacterial_spot | Medium   |
-| Pepper,\_bell\_\_\_healthy        | None     |
-
-### Potato — 3 classes
-
-| Class                    | Severity |
-| ------------------------ | -------- |
-| Potato\_\_\_Early_blight | Medium   |
-| Potato\_\_\_Late_blight  | High     |
-| Potato\_\_\_healthy      | None     |
-
-### Tomato — 10 classes
-
-| Class                                            | Severity |
-| ------------------------------------------------ | -------- |
-| Tomato\_\_\_Bacterial_spot                       | Medium   |
-| Tomato\_\_\_Early_blight                         | Medium   |
-| Tomato\_\_\_Late_blight                          | High     |
-| Tomato\_\_\_Leaf_Mold                            | Medium   |
-| Tomato\_\_\_Septoria_leaf_spot                   | Medium   |
-| Tomato\_\_\_Spider_mites Two-spotted_spider_mite | Medium   |
-| Tomato\_\_\_Target_Spot                          | Medium   |
-| Tomato\_\_\_Tomato_mosaic_virus                  | High     |
-| Tomato\_\_\_Tomato_Yellow_Leaf_Curl_Virus        | High     |
-| Tomato\_\_\_healthy                              | None     |
-
----
-
-## Image Preprocessing
-
-All images are processed before inference:
-
-1. Convert to RGB
-2. Resize to **224 × 224** pixels
-3. Normalize pixel values to **0.0 – 1.0**
-4. Expand dims → shape `(1, 224, 224, 3)`
-
----
-
-## Troubleshooting
-
-| Problem | Cause | Fix |
-| --- | --- | --- |
-| `Fatal error in launcher: Unable to create process using "...python.exe"` | `uvicorn` resolved to a system-wide Python install, not this project's `.venv` | Run `.\.venv\Scripts\Activate` first, then re-run `uvicorn` |
-| Prompt doesn't show `(.venv)` | Virtual environment not activated in this terminal | Activation doesn't persist across terminals — re-run `.\.venv\Scripts\Activate` in every new one |
-| `WARNING: TensorFlow GPU support is not available on native Windows` | Expected — TensorFlow ≥2.11 dropped native Windows GPU support | Harmless; inference runs on CPU. Use WSL2 for GPU acceleration if needed |
-| Traceback appears after pressing `Ctrl+C` to stop the server | Normal `uvicorn --reload` shutdown behavior on Windows | Harmless — ignore it if `Application startup complete` printed beforehand |
-| `Address already in use` on port 8000 | A previous `uvicorn` process is still running | Stop the old process, or start on a different port with `--port 8001` |
-| `500` error / model inference error on `/predict` | Corrupted or missing model file in `models/` | Confirm `cnn_best.keras` and `class_names.json` exist and aren't truncated |
-
----
-
-## Deployment (Railway)
-
-1. New Railway service → connect this GitHub repo → set **root directory** to `ai-service/`.
-2. Start command is picked up automatically from the `Procfile`: `uvicorn main:app --host 0.0.0.0 --port $PORT`. Railway injects `$PORT` — no need to set it manually.
-3. No environment variables are required (CORS is open by design — this service is only ever called server-to-server by the backend, never directly from a browser).
-4. After deploying, copy the Railway-assigned URL and set it as `AI_SERVICE_URL` on the Railway **backend** service (see [`../backend/README.md`](../backend/README.md)).
-5. Confirm it's live: `GET https://<your-ai-service>.up.railway.app/` should return the health check JSON.
-
-> Cold starts: TensorFlow takes a few seconds to load the model on the first request after a period of inactivity (Railway's free tier can sleep idle services) — this is normal, not an error.
-
----
-
-## Integration
-
-Farmer uploads an image to the Node.js backend:
-
-```
-POST http://localhost:5000/api/diagnosis   (multipart/form-data, JWT required)
-```
-
-The backend forwards the image to this service and saves the result:
-
-```
-POST http://localhost:8000/predict   (multipart/form-data)
-```
-
-The frontend never calls this service directly — CORS is left open for local development/testing convenience only.
-
----
-
-_AgriSense AI Service · CNN Crop Disease Detection · 27 classes_

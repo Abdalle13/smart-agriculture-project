@@ -11,6 +11,7 @@ frontend/node_modules/
 .env.production.local
 backend/.env
 frontend/.env
+ai-service/.env
 
 # Production build directories
 dist/

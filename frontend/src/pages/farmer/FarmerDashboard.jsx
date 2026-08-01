@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 import { io } from 'socket.io-client'
-import { getSoilRecommendations } from '../../utils/recommendationEngine'
 import { SENSOR_THRESHOLDS, SENSOR_CONFIG, ROUTES } from '../../utils/constants'
 import {
   FiZap, FiBarChart2, FiCloud, FiCpu, FiChevronRight,
-  FiAlertOctagon, FiAlertTriangle, FiCheckCircle, FiAlertCircle
+  FiAlertOctagon, FiAlertTriangle, FiCheckCircle
 } from 'react-icons/fi'
 
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'
@@ -15,11 +14,13 @@ const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://
 export default function FarmerDashboard() {
   const { user, refreshUser } = useAuth()
   const navigate = useNavigate()
-  const [readings, setReadings] = useState(null)
-  const [recommendations, setRecommendations] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [lastUpdated, setLastUpdated] = useState('')
+  const [readings,     setReadings]     = useState(null)
+  const [advisory,     setAdvisory]     = useState([])
+  const [advLoading,   setAdvLoading]   = useState(false)
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState(null)
+  const [lastUpdated,  setLastUpdated]  = useState('')
+  const hasFetchedAI = useRef(false)
 
   // Pick up a sensor an admin assigned after this session started
   useEffect(() => { refreshUser() }, [refreshUser])
@@ -37,8 +38,12 @@ export default function FarmerDashboard() {
         const { data: res } = await api.get(`/sensors/${activeSensorId}/latest`)
         if (res.data) {
           setReadings(res.data)
-          setRecommendations(getSoilRecommendations(res.data))
           setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+          // Fetch AI advisory once on first load
+          if (!hasFetchedAI.current) {
+            hasFetchedAI.current = true
+            fetchAIAdvisory(res.data)
+          }
         }
       } catch (err) {
         setError(err.response?.data?.message || 'Could not reach the sensor probe. Check your connection.')
@@ -62,7 +67,6 @@ export default function FarmerDashboard() {
 
     socket.on('newReading', (data) => {
       setReadings(data)
-      setRecommendations(getSoilRecommendations(data))
       setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
       setError(null)
       setLoading(false)
@@ -70,6 +74,29 @@ export default function FarmerDashboard() {
 
     return () => socket.disconnect()
   }, [user])
+
+  // ── Fetch soil advisory (array of alert cards)
+  const fetchAIAdvisory = async (data) => {
+    if (!data) return
+    setAdvLoading(true)
+    try {
+      const { data: res } = await api.post('/advise/soil', {
+        nitrogen:    data.nitrogen,
+        phosphorus:  data.phosphorus,
+        potassium:   data.potassium,
+        temperature: data.temperature,
+        humidity:    data.humidity,
+        moisture:    data.moisture,
+      })
+      if (res.success && Array.isArray(res.advisory)) {
+        setAdvisory(res.advisory)
+      }
+    } catch {
+      setAdvisory([])
+    } finally {
+      setAdvLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -115,16 +142,17 @@ export default function FarmerDashboard() {
     return <span className="badge-green">Optimal</span>
   }
 
-  const getRecIcon = (type) => {
-    if (type === 'danger')  return <FiAlertOctagon className="w-4 h-4 shrink-0 mt-0.5" />
-    if (type === 'warning') return <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-    return <FiCheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
+  const getAlertClass = (type) => {
+    if (type === 'danger')  return 'bg-red-50 border-red-200 text-red-800'
+    if (type === 'warning') return 'bg-amber-50 border-amber-200 text-amber-800'
+    if (type === 'info')    return 'bg-blue-50 border-blue-200 text-blue-800'
+    return 'bg-emerald-50 border-emerald-200 text-emerald-800'
   }
 
-  const getAlertClass = (type) => {
-    if (type === 'danger')  return 'alert-danger'
-    if (type === 'warning') return 'alert-warning'
-    return 'alert-success'
+  const getAlertIcon = (type) => {
+    if (type === 'danger')  return <FiAlertOctagon className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
+    if (type === 'warning') return <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+    return <FiCheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
   }
 
   return (
@@ -270,7 +298,6 @@ export default function FarmerDashboard() {
           </h2>
 
           {isStale ? (
-            // Sensor is offline: don't show recommendations based on 0 values
             <div className="flex items-start gap-3 p-4 rounded-xl border bg-red-50 border-red-200 text-sm">
               <FiAlertOctagon className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
               <div className="space-y-0.5">
@@ -281,22 +308,31 @@ export default function FarmerDashboard() {
               </div>
             </div>
           ) : hasData ? (
-            <div className="space-y-3">
-              {recommendations.map((rec, index) => (
-                <div
-                  key={index}
-                  className={`${getAlertClass(rec.type)} flex items-start gap-3 p-4 rounded-xl border text-sm`}
-                >
-                  {getRecIcon(rec.type)}
-                  <div className="space-y-0.5">
-                    <p className="font-semibold text-xs uppercase tracking-wider">
-                      {rec.type === 'danger' ? 'Critical Alert' : rec.type === 'warning' ? 'Advisory Warning' : 'Optimal Condition'}
-                    </p>
-                    <p className="text-slate-600 text-sm mt-0.5 leading-relaxed font-normal">{rec.message}</p>
+            advLoading ? (
+              <div className="flex flex-col items-center justify-center w-full gap-2 py-6">
+                <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs text-slate-400">Syncing advisory...</p>
+              </div>
+            ) : advisory.length > 0 ? (
+              <div className="space-y-3">
+                {advisory.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`${getAlertClass(item.type)} flex items-start gap-3 p-3.5 rounded-xl border text-xs`}
+                  >
+                    {getAlertIcon(item.type)}
+                    <div className="space-y-0.5">
+                      <p className="font-bold uppercase tracking-wider text-[11px]">{item.title}</p>
+                      <p className="text-slate-600 leading-relaxed font-normal">{item.message}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 text-center w-full py-6">
+                Advisory will appear once your field probe sends its first reading.
+              </p>
+            )
           ) : (
             <p className="text-sm text-slate-400 text-center py-8">
               No advisory yet. This appears once your field probe sends its first reading.

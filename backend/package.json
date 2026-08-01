@@ -17,6 +17,7 @@
   "author": "AgriSense Team",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@imagekit/nodejs": "^7.10.0",
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",

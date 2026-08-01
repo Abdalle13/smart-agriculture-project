@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  FiCpu, FiClock, FiAlertCircle, FiRefreshCw, FiFile,
-  FiInfo, FiShield, FiCalendar
+  FiCpu, FiClock, FiAlertCircle, FiRefreshCw, FiImage,
+  FiShield, FiCalendar, FiCheckCircle, FiAlertTriangle, FiX
 } from 'react-icons/fi'
 import api from '../../services/api'
 
@@ -13,71 +13,86 @@ const getSeverityBadge = (sev) => {
   return <span className="badge-green">Healthy Crop</span>
 }
 
+const getSeverityColor = (sev) => {
+  if (sev === 'High')    return { bg: 'bg-red-50',     border: 'border-red-200',     icon: 'text-red-500',     title: 'text-red-800'     }
+  if (sev === 'Medium')  return { bg: 'bg-amber-50',   border: 'border-amber-200',   icon: 'text-amber-500',   title: 'text-amber-800'   }
+  if (sev === 'Unknown') return { bg: 'bg-slate-50',   border: 'border-slate-200',   icon: 'text-slate-400',   title: 'text-slate-700'   }
+  return                        { bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'text-emerald-500', title: 'text-emerald-800' }
+}
+
 const DATE_FILTERS = [
   { label: 'Today',   value: 'today' },
   { label: '7 Days',  value: '7d'    },
   { label: '30 Days', value: '30d'   },
   { label: 'All',     value: 'all'   },
 ]
+const SEVERITY_FILTERS = ['all', 'High', 'Medium', 'Low', 'None', 'Unknown']
 
-const SEVERITY_FILTERS = ['all', 'High', 'Medium', 'Low']
-
-// ─── Detail Modal ───────────────────────────────────────────────────────────
+// Detail Modal
 function DetailModal({ log, onClose }) {
+  const colors = getSeverityColor(log.severity)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 overflow-hidden max-h-[85vh] flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50 shrink-0">
-          <h3 className="text-sm font-bold text-slate-800">Scan Detail</h3>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 text-lg cursor-pointer transition-colors">×</button>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">Scan Detail</h3>
+            <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+              <FiCalendar size={10} />
+              {new Date(log.createdAt).toLocaleDateString()} · {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors">
+            <FiX className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="overflow-y-auto p-5 space-y-4">
           {log.imageUrl ? (
-            <img src={log.imageUrl} alt={log.fileName} className="w-full h-48 object-cover rounded-2xl border border-slate-200" />
+            <div className="rounded-2xl overflow-hidden border border-slate-200" style={{ aspectRatio: '4/3' }}>
+              <img src={log.imageUrl} alt="Scan" className="w-full h-full object-cover" />
+            </div>
           ) : (
-            <div className="w-full h-48 rounded-2xl border border-slate-200 bg-slate-100 flex items-center justify-center">
-              <FiFile className="w-8 h-8 text-slate-400" />
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center" style={{ aspectRatio: '4/3' }}>
+              <FiImage className="w-10 h-10 text-slate-300" />
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <p className="text-xl font-extrabold text-slate-800">{log.disease}</p>
-            {getSeverityBadge(log.severity)}
-          </div>
-
-          <div className="flex items-center gap-4 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <FiCalendar size={11} />
-              {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-            <span className="font-bold font-mono text-emerald-700">{(log.confidence * 100).toFixed(0)}% confidence</span>
+          <div className={`p-4 ${colors.bg} border ${colors.border} rounded-2xl`}>
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Detected Condition</p>
+              {getSeverityBadge(log.severity)}
+            </div>
+            <p className="text-xl font-extrabold text-slate-800 leading-snug">{log.disease}</p>
           </div>
 
           {log.treatment && (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
-              <div className="flex items-center gap-2 mb-2.5">
-                <div className="w-6 h-6 rounded-lg bg-emerald-200 flex items-center justify-center shrink-0">
-                  <FiInfo className="w-3.5 h-3.5 text-emerald-700" />
-                </div>
-                <p className="text-sm font-bold text-emerald-800 tracking-tight">Treatment Advisory</p>
+            <div className={`p-4 ${colors.bg} border ${colors.border} rounded-2xl`}>
+              <div className="flex items-center gap-2 mb-2">
+                {log.severity === 'None'
+                  ? <FiCheckCircle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
+                  : <FiAlertTriangle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
+                }
+                <p className={`text-xs font-bold uppercase tracking-wider ${colors.title}`}>
+                  {log.severity === 'Unknown' ? 'Xaaladda Sawirka' : log.severity === 'None' ? 'Xaaladda Geedka' : 'Daaweynta Cudurka'}
+                </p>
               </div>
-              <p className="text-sm text-slate-700 leading-relaxed pl-8">{log.treatment}</p>
+              <p className="text-sm text-slate-700 leading-relaxed">{log.treatment}</p>
             </div>
           )}
 
           {log.prevention && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
-              <div className="flex items-center gap-2 mb-2.5">
-                <div className="w-6 h-6 rounded-lg bg-blue-200 flex items-center justify-center shrink-0">
-                  <FiShield className="w-3.5 h-3.5 text-blue-700" />
-                </div>
-                <p className="text-sm font-bold text-blue-800 tracking-tight">Prevention</p>
+              <div className="flex items-center gap-2 mb-2">
+                <FiShield className="w-4 h-4 shrink-0 text-blue-500" />
+                <p className="text-xs font-bold uppercase tracking-wider text-blue-800">
+                  {log.severity === 'Unknown' ? 'Sida Sawir Fiican Loo Qaado' : log.severity === 'None' ? 'Xaaladda Wanaagsan u Sii Wad' : 'Ka Hortaga Cudurka'}
+                </p>
               </div>
-              <p className="text-sm text-slate-700 leading-relaxed pl-8">{log.prevention}</p>
+              <p className="text-sm text-slate-700 leading-relaxed">{log.prevention}</p>
             </div>
           )}
         </div>
@@ -86,14 +101,14 @@ function DetailModal({ log, onClose }) {
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page
 export default function FarmerDiagnosisHistory() {
-  const [history,    setHistory]    = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [fetchError, setFetchError] = useState(false)
+  const [history,        setHistory]        = useState([])
+  const [loading,        setLoading]        = useState(true)
+  const [fetchError,     setFetchError]     = useState(false)
   const [dateRange,      setDateRange]      = useState('all')
   const [severityFilter, setSeverityFilter] = useState('all')
-  const [selectedLog, setSelectedLog] = useState(null)
+  const [selectedLog,    setSelectedLog]    = useState(null)
 
   const fetchHistory = useCallback(async () => {
     setLoading(true)
@@ -114,7 +129,7 @@ export default function FarmerDiagnosisHistory() {
     ? history
     : history.filter(log => log.severity === severityFilter)
 
-  const highCount = history.filter(log => log.severity === 'High').length
+  const highCount    = history.filter(log => log.severity === 'High').length
   const healthyCount = history.filter(log => log.severity === 'None').length
 
   return (
@@ -137,163 +152,148 @@ export default function FarmerDiagnosisHistory() {
       </div>
 
       {/* ── Stats Strip ── */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total',   value: history.length, Icon: FiCpu,   iconBg: 'bg-slate-100 border-slate-200', iconColor: 'text-slate-500', valColor: 'text-slate-800' },
-          { label: 'High',    value: highCount,       Icon: FiAlertCircle, iconBg: 'bg-red-50 border-red-200', iconColor: 'text-red-500', valColor: 'text-red-700' },
-          { label: 'Healthy', value: healthyCount,    Icon: FiShield, iconBg: 'bg-emerald-50 border-emerald-200', iconColor: 'text-emerald-600', valColor: 'text-emerald-700' },
+          { label: 'Total Scans', value: history.length, Icon: FiCpu,          iconBg: 'bg-slate-100 border-slate-200',      iconColor: 'text-slate-500',   valColor: 'text-slate-800'   },
+          { label: 'High Risk',   value: highCount,       Icon: FiAlertCircle,  iconBg: 'bg-red-50 border-red-200',           iconColor: 'text-red-500',     valColor: 'text-red-700'     },
+          { label: 'Healthy',     value: healthyCount,    Icon: FiShield,       iconBg: 'bg-emerald-50 border-emerald-200',   iconColor: 'text-emerald-600', valColor: 'text-emerald-700' },
         ].map(s => (
-          <div key={s.label} className="min-w-0 bg-white border border-slate-200 rounded-2xl px-2.5 py-3 sm:px-5 sm:py-4 flex items-center gap-1.5 sm:gap-4 shadow-sm">
-            <div className={`w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl border flex items-center justify-center ${s.iconBg} ${s.iconColor} shrink-0`}>
-              <s.Icon size={13} className="sm:hidden" />
-              <s.Icon size={15} className="hidden sm:block" />
+          <div key={s.label} className="bg-white border border-slate-200 rounded-2xl px-3 py-3 sm:px-5 sm:py-4 flex items-center gap-3 shadow-sm">
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center ${s.iconBg} ${s.iconColor} shrink-0`}>
+              <s.Icon size={15} />
             </div>
             <div className="min-w-0">
-              <p className={`text-lg sm:text-2xl font-black ${s.valColor}`}>{s.value}</p>
-              <p className="text-[9px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wide sm:tracking-wider mt-0.5 truncate">{s.label}</p>
+              <p className={`text-xl sm:text-2xl font-black ${s.valColor}`}>{s.value}</p>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5 truncate">{s.label}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* ── Main Card ── */}
-      <div className="card space-y-0 p-0 overflow-hidden">
+      {/* ── Card Container with Table ── */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        {/* Toolbar Header */}
+        <div className="px-5 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-slate-50/50">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Time Range */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                <FiClock size={10} /> Time Range
+              </span>
+              <div className="flex gap-1.5">
+                {DATE_FILTERS.map(d => (
+                  <button
+                    key={d.value}
+                    onClick={() => setDateRange(d.value)}
+                    className={`px-3 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                      dateRange === d.value
+                        ? 'bg-emerald-600 text-white border border-emerald-600 shadow-sm'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700'
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {/* Toolbar */}
-        <div className="px-5 py-3.5 border-b border-slate-100 flex flex-wrap items-end gap-4 bg-slate-50/50">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <FiClock size={10} /> Time Range
-            </span>
-            <div className="flex gap-1.5">
-              {DATE_FILTERS.map(d => (
-                <button
-                  key={d.value}
-                  onClick={() => setDateRange(d.value)}
-                  className={`px-3 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm ${
-                    dateRange === d.value
-                      ? 'bg-emerald-600 text-white border border-emerald-600'
-                      : 'bg-white border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700'
-                  }`}
-                >
-                  {d.label}
-                </button>
-              ))}
+            <div className="w-px h-8 bg-slate-200 hidden sm:block" />
+
+            {/* Severity Filter */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                <FiAlertCircle size={10} /> Severity
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {SEVERITY_FILTERS.map(sev => (
+                  <button
+                    key={sev}
+                    onClick={() => setSeverityFilter(sev)}
+                    className={`px-3 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                      severityFilter === sev
+                        ? 'bg-emerald-600 text-white border border-emerald-600 shadow-sm'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700'
+                    }`}
+                  >
+                    {sev === 'all' ? 'All' : sev === 'None' ? 'Healthy' : sev === 'Unknown' ? 'Unrecognized' : sev}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="w-px h-8 bg-slate-200 hidden sm:block self-end mb-0.5" />
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <FiAlertCircle size={10} /> Severity
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {SEVERITY_FILTERS.map(sev => (
-                <button
-                  key={sev}
-                  onClick={() => setSeverityFilter(sev)}
-                  className={`px-3 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm ${
-                    severityFilter === sev
-                      ? 'bg-emerald-600 text-white border border-emerald-600'
-                      : 'bg-white border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700'
-                  }`}
-                >
-                  {sev === 'all' ? 'All' : sev}
-                </button>
-              ))}
-            </div>
+          <div className="text-xs text-slate-400 font-semibold">
+            {filteredHistory.length} {filteredHistory.length === 1 ? 'scan' : 'scans'} found
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-5">
+        {/* ── Table Content ── */}
+        <div className="p-0">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
               <div className="w-9 h-9 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
               <p className="text-sm">Loading scan history…</p>
             </div>
           ) : fetchError ? (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+            <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-600">
               <FiAlertCircle className="w-4 h-4 shrink-0" />
               Failed to load scan history.
               <button onClick={fetchHistory} className="ml-auto text-xs font-semibold text-red-700 hover:underline cursor-pointer">Retry</button>
             </div>
           ) : history.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">No scans yet. Upload or photograph a leaf to get started.</p>
+            <div className="flex flex-col items-center justify-center py-20 text-center gap-3 text-slate-400">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+                <FiImage className="w-7 h-7 text-slate-300" />
+              </div>
+              <p className="text-sm font-semibold text-slate-600">No scans yet</p>
+              <p className="text-xs max-w-xs">Upload or photograph a leaf on the diagnosis page to get started.</p>
+            </div>
           ) : filteredHistory.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">No scans match this filter.</p>
+            <div className="flex items-center justify-center py-12 text-sm text-slate-400">
+              No scans match this filter.
+            </div>
           ) : (
-            <>
-              {/* Mobile: stacked cards */}
-              <div className="sm:hidden space-y-4">
-                {filteredHistory.map((log) => (
-                  <button
-                    key={log._id}
-                    onClick={() => setSelectedLog(log)}
-                    className="w-full text-left rounded-2xl border border-slate-200 overflow-hidden cursor-pointer hover:border-emerald-300 transition-colors"
-                  >
-                    {log.imageUrl ? (
-                      <img src={log.imageUrl} alt={log.fileName} className="w-full h-36 object-cover" />
-                    ) : (
-                      <div className="w-full h-36 bg-slate-100 flex items-center justify-center">
-                        <FiFile className="w-6 h-6 text-slate-400" />
-                      </div>
-                    )}
-                    <div className="p-4 space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-bold text-slate-800 text-base truncate">{log.disease}</p>
-                        {getSeverityBadge(log.severity)}
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>{new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span className="font-bold font-mono text-emerald-700 text-sm">{(log.confidence * 100).toFixed(0)}%</span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Desktop: table */}
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full text-left text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                      <th className="py-3 px-2">Image</th>
-                      <th className="py-3 px-2">Date</th>
-                      <th className="py-3 px-2">Diagnosis</th>
-                      <th className="py-3 px-2">Confidence</th>
-                      <th className="py-3 px-2">Severity</th>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/70 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <th className="py-3.5 px-4">Image</th>
+                    <th className="py-3.5 px-4">Date & Time</th>
+                    <th className="py-3.5 px-4">Diagnosis</th>
+                    <th className="py-3.5 px-4">Severity</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredHistory.map((log) => (
+                    <tr
+                      key={log._id}
+                      onClick={() => setSelectedLog(log)}
+                      className="hover:bg-emerald-50/40 transition-colors cursor-pointer group"
+                    >
+                      <td className="py-3 px-4">
+                        {log.imageUrl ? (
+                          <img
+                            src={log.imageUrl}
+                            alt="Scan"
+                            className="w-12 h-12 object-cover rounded-xl border border-slate-200 group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center">
+                            <FiImage className="w-5 h-5 text-slate-300" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-slate-500 font-mono text-xs whitespace-nowrap">
+                        <p className="font-semibold text-slate-700">{new Date(log.createdAt).toLocaleDateString()}</p>
+                        <p className="text-slate-400 text-[11px]">{new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      </td>
+                      <td className="py-3 px-4 font-bold text-slate-800 text-sm">{log.disease}</td>
+                      <td className="py-3 px-4">{getSeverityBadge(log.severity)}</td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredHistory.map((log) => (
-                      <tr
-                        key={log._id}
-                        onClick={() => setSelectedLog(log)}
-                        className="hover:bg-slate-50 transition-colors cursor-pointer"
-                      >
-                        <td className="py-3 px-2">
-                          {log.imageUrl ? (
-                            <img src={log.imageUrl} alt={log.fileName} className="w-12 h-12 object-cover rounded-xl border border-slate-200" />
-                          ) : (
-                            <div className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center">
-                              <FiFile className="w-4 h-4 text-slate-400" />
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-3 px-2 text-slate-500 font-mono text-xs whitespace-nowrap">
-                          {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="py-3 px-2 font-semibold text-slate-800">{log.disease}</td>
-                        <td className="py-3 px-2 font-bold font-mono text-emerald-700">{(log.confidence * 100).toFixed(0)}%</td>
-                        <td className="py-3 px-2">{getSeverityBadge(log.severity)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

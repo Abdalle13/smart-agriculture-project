@@ -1,284 +1,211 @@
 import json
 import io
+import os
+import asyncio
 import numpy as np
 from pathlib import Path
 from PIL import Image
 import tensorflow as tf
+from dotenv import load_dotenv
+from google import genai
+
+# Load environment variables from .env
+load_dotenv()
+
+# ── Gemini Client
+_gemini_key = os.getenv("GEMINI_API_KEY", "")
+_gemini_client = genai.Client(api_key=_gemini_key) if _gemini_key else None
 
 MODEL_DIR = Path("./models")
 
-# Load CNN model and class names once on startup 
+# ── Load CNN model once at startup
 cnn_model = tf.keras.models.load_model(MODEL_DIR / "cnn_best.keras")
 
 with open(MODEL_DIR / "class_names.json") as f:
     data = json.load(f)
-    class_names = data["class_names"]   # JSON is {"class_names": [...], "num_classes": 27}
+    class_names = data["class_names"]
 
-# Treatment lookup — keys must match class_names.json exactly
-TREATMENT_MAP = {
-    # Mango (short class names from MangoLeafBD dataset)
-    "Anthracnose": {
-        "treatment": "Apply copper-based fungicides or mancozeb before and after flowering. Remove and destroy all infected fruits and leaves.",
-        "severity": "High",
-        "prevention": "Prune trees to improve air circulation and avoid wetting fruit during irrigation.",
-        "crop": "Mango",
-    },
-    "Bacterial Canker": {
-        "treatment": "Prune infected branches 30 cm below visible symptoms. Apply copper bactericide on cuts. Disinfect pruning tools between each cut.",
-        "severity": "High",
-        "prevention": "Avoid mechanical injuries to bark and apply copper sprays after any pruning.",
-        "crop": "Mango",
-    },
-    "Cutting Weevil": {
-        "treatment": "Apply insecticides (chlorpyrifos, carbaryl) to stem and soil around the tree. Remove and destroy all infested shoots.",
-        "severity": "Medium",
-        "prevention": "Monitor trees regularly and remove dead wood where weevils breed.",
-        "crop": "Mango",
-    },
-    "Die Back": {
-        "treatment": "Prune dead branches back to healthy wood. Apply Bordeaux mixture or copper fungicide to all cut surfaces. Improve tree nutrition with potassium and zinc.",
-        "severity": "High",
-        "prevention": "Avoid water stress and maintain adequate potassium and zinc levels in soil.",
-        "crop": "Mango",
-    },
-    "Gall Midge": {
-        "treatment": "Apply systemic insecticides (dimethoate, imidacloprid) at bud burst. Remove and destroy all galled tissues immediately.",
-        "severity": "Medium",
-        "prevention": "Time insecticide applications at leaf flush stage when midges are most active.",
-        "crop": "Mango",
-    },
-    "Healthy": {
-        "treatment": "No treatment needed. Tree is healthy.",
-        "severity": "None",
-        "prevention": "Maintain regular fertilization schedule and monitor for early signs of pests or disease.",
-        "crop": "Mango",
-    },
-    "Powdery Mildew": {
-        "treatment": "Apply sulfur-based fungicides or wettable sulfur. Use potassium bicarbonate as an organic alternative. Spray during cooler parts of the day.",
-        "severity": "Medium",
-        "prevention": "Ensure good air circulation and avoid excessive nitrogen fertilization.",
-        "crop": "Mango",
-    },
-    "Sooty Mould": {
-        "treatment": "Control honeydew-producing insects (aphids, whiteflies, mealybugs) with appropriate insecticides. Wash affected leaf surfaces with mild soapy water.",
-        "severity": "Low",
-        "prevention": "Control sap-sucking insects to eliminate the honeydew substrate that sooty mold grows on.",
-        "crop": "Mango",
-    },
+# ── Warm-up: run a dummy prediction so the first real request is instant ───
+_dummy = np.zeros((1, 224, 224, 3), dtype=np.float32)
+cnn_model.predict(_dummy, verbose=0)
+print("CNN model warmed up — first prediction will be instant.")
 
-    # ── Corn
-    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {
-        "treatment": "Apply fungicides containing azoxystrobin or pyraclostrobin. Remove and destroy infected leaves. Practice strict crop rotation.",
-        "severity": "Medium",
-        "prevention": "Plant resistant corn varieties and rotate crops every 2–3 years.",
-        "crop": "Corn",
-    },
-    "Corn_(maize)___Common_rust_": {
-        "treatment": "Apply triazole or strobilurin fungicides at early infection stage. Scout fields regularly for early detection.",
-        "severity": "Medium",
-        "prevention": "Plant rust-resistant hybrids and monitor fields during warm, humid conditions.",
-        "crop": "Corn",
-    },
-    "Corn_(maize)___Northern_Leaf_Blight": {
-        "treatment": "Apply foliar fungicides (azoxystrobin, propiconazole) when lesions first appear. Destroy all crop debris after harvest.",
-        "severity": "High",
-        "prevention": "Use resistant varieties and avoid consecutive corn planting in the same field.",
-        "crop": "Corn",
-    },
-    "Corn_(maize)___healthy": {
-        "treatment": "No treatment needed. Continue regular monitoring.",
-        "severity": "None",
-        "prevention": "Maintain balanced soil nutrition and adequate plant spacing for good airflow.",
-        "crop": "Corn",
-    },
+CONFIDENCE_THRESHOLD = 0.60
 
-    # ── Pepper
-    "Pepper,_bell___Bacterial_spot": {
-        "treatment": "Apply copper-based bactericides. Remove infected plant parts immediately. Avoid overhead irrigation.",
-        "severity": "Medium",
-        "prevention": "Use certified disease-free seeds and avoid working in wet fields.",
-        "crop": "Pepper",
-    },
-    "Pepper,_bell___healthy": {
-        "treatment": "No treatment needed. Plant is healthy.",
-        "severity": "None",
-        "prevention": "Maintain proper spacing and ensure good drainage to prevent future disease.",
-        "crop": "Pepper",
-    },
-
-    # ── Potato
-    "Potato___Early_blight": {
-        "treatment": "Apply chlorothalonil or mancozeb fungicides. Remove infected leaves. Ensure adequate potassium levels in soil.",
-        "severity": "Medium",
-        "prevention": "Rotate crops and apply mulch to prevent soil splash onto leaves.",
-        "crop": "Potato",
-    },
-    "Potato___Late_blight": {
-        "treatment": "Apply systemic fungicides (metalaxyl, cymoxanil) immediately. Destroy all infected plants. Do not compost infected material.",
-        "severity": "High",
-        "prevention": "Plant certified seed potatoes and apply preventive fungicide sprays during humid weather.",
-        "crop": "Potato",
-    },
-    "Potato___healthy": {
-        "treatment": "No treatment needed. Continue regular monitoring.",
-        "severity": "None",
-        "prevention": "Ensure well-drained soil and balanced fertilization for continued plant health.",
-        "crop": "Potato",
-    },
-
-    # ── Tomato
-    "Tomato___Bacterial_spot": {
-        "treatment": "Apply copper-based bactericides combined with mancozeb. Remove heavily infected leaves. Avoid wetting foliage during irrigation.",
-        "severity": "Medium",
-        "prevention": "Use disease-free transplants and switch to drip irrigation.",
-        "crop": "Tomato",
-    },
-    "Tomato___Early_blight": {
-        "treatment": "Apply chlorothalonil or copper fungicides. Remove lower infected leaves. Ensure adequate plant nutrition.",
-        "severity": "Medium",
-        "prevention": "Mulch soil surface and use drip irrigation to avoid leaf wetness.",
-        "crop": "Tomato",
-    },
-    "Tomato___Late_blight": {
-        "treatment": "Apply systemic fungicides (mefenoxam, cymoxanil) immediately. Destroy all infected plant material. Act fast — spreads rapidly.",
-        "severity": "High",
-        "prevention": "Monitor weather and apply preventive sprays before expected humid conditions.",
-        "crop": "Tomato",
-    },
-    "Tomato___Leaf_Mold": {
-        "treatment": "Improve air circulation by pruning. Apply fungicides (chlorothalonil, copper). Reduce greenhouse humidity below 85%.",
-        "severity": "Medium",
-        "prevention": "Prune plants for better airflow and avoid high humidity environments.",
-        "crop": "Tomato",
-    },
-    "Tomato___Septoria_leaf_spot": {
-        "treatment": "Apply fungicides (chlorothalonil, copper, or mancozeb). Remove infected lower leaves. Avoid wetting foliage during irrigation.",
-        "severity": "Medium",
-        "prevention": "Rotate crops and remove all plant debris after harvest.",
-        "crop": "Tomato",
-    },
-    "Tomato___Spider_mites Two-spotted_spider_mite": {
-        "treatment": "Apply miticides (abamectin, bifenazate) or insecticidal soap. Increase plant moisture — mites thrive in dry conditions. Remove heavily infested leaves.",
-        "severity": "Medium",
-        "prevention": "Maintain adequate irrigation and avoid dusty field conditions.",
-        "crop": "Tomato",
-    },
-    "Tomato___Target_Spot": {
-        "treatment": "Apply fungicides containing azoxystrobin or chlorothalonil. Remove affected leaves promptly.",
-        "severity": "Medium",
-        "prevention": "Ensure good air circulation and avoid excessive nitrogen fertilization.",
-        "crop": "Tomato",
-    },
-    "Tomato___Tomato_mosaic_virus": {
-        "treatment": "No chemical cure available. Remove and destroy infected plants immediately. Disinfect all tools with 10% bleach solution.",
-        "severity": "High",
-        "prevention": "Control aphid populations, use virus-resistant varieties, and wash hands before handling plants.",
-        "crop": "Tomato",
-    },
-    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
-        "treatment": "Remove and destroy infected plants. Control whitefly vectors with insecticides (imidacloprid, thiamethoxam). Use reflective mulches to repel whiteflies.",
-        "severity": "High",
-        "prevention": "Use insect-proof nets in nurseries and plant whitefly-resistant varieties.",
-        "crop": "Tomato",
-    },
-    "Tomato___healthy": {
-        "treatment": "No treatment needed. Plant is in excellent condition.",
-        "severity": "None",
-        "prevention": "Continue regular scouting and maintain balanced soil fertility.",
-        "crop": "Tomato",
-    },
-}
-
-
-def _make_display_name(class_key: str) -> str:
-    """Convert a class key to a human-readable disease name."""
-    if "___" in class_key:
-        # PlantVillage style: "Tomato___Early_blight" → "Tomato Early blight"
-        crop, disease = class_key.split("___", 1)
-        crop    = crop.replace("_", " ").replace(",", "").strip()
-        disease = disease.replace("_", " ").strip()
-        return f"{crop} {disease}"
-    # Short-name style (Mango dataset): already human-readable
-    return class_key
-
-
-def preprocess_image(image_bytes: bytes) -> np.ndarray:
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img = img.resize((224, 224))
-    img_array = np.array(img, dtype=np.float32) / 255.0
-    return np.expand_dims(img_array, axis=0)
-
-
-def is_plant_image(image_bytes: bytes) -> bool:
-    """
-    Heuristic check: rejects images that clearly are not plant/leaf photos.
-    Strategy: A leaf or crop image should have meaningful green channel presence.
-    Human faces, objects, or unrelated photos tend to fail this check.
-    Returns True if the image looks plant-like, False otherwise.
-    """
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img = img.resize((128, 128))
-    arr = np.array(img, dtype=np.float32)
-
-    R = arr[:, :, 0]
-    G = arr[:, :, 1]
-    B = arr[:, :, 2]
-
-    # A pixel is "green-dominant" if Green > Red AND Green > Blue by a margin
-    green_dominant = np.sum((G > R + 10) & (G > B + 10))
-    total_pixels   = arr.shape[0] * arr.shape[1]
-    green_ratio    = green_dominant / total_pixels
-
-    # Leaf images typically have at least 8% green-dominant pixels
-    # Human faces / objects typically have < 3%
-    return green_ratio >= 0.08
-
-
-CONFIDENCE_THRESHOLD = 0.60  # below this, treated as unrecognized
-
-
-_UNRECOGNIZED = {
-    "disease":    "Unrecognized Crop or Disease",
+# Returned when the image is clearly NOT a plant (person, car, food, animal, etc.)
+_NOT_A_PLANT = {
+    "disease":    "Sawirka aad sogalisay ma ahan caleen geed",
     "class_key":  None,
     "crop":       "Unknown",
     "severity":   "Unknown",
-    "treatment":  "We couldn't identify a disease from this photo. Please take a new, clear photo or contact your administrator for assistance.",
-    "prevention": "Ensure the photo is taken in good lighting and well-focused.",
-    "model_used": "CNN",
+    "treatment":  "Nidaamkan waxaa loogu talagalay caleen dhirta oo keliya. Sawirka aad gelisay wuxuu u muuqdaa inuu yahay qof, xayawaan, ama shay kale  ma ahan caleen geed ah.",
+    "prevention": "Fadlan sawir hal caleen oo dhirta beertaada ka mid ah oo kaamirada u dhowee. Nidaamku si toos ah ayuu u ogaanayaa haddii cudur jiro iyo in kale.",
+    "model_used": "CNN (MobileNetV2)",
+}
+
+# Returned when image looks like a plant but model can't classify it (low confidence)
+_UNRECOGNIZED = {
+    "disease":    "Sawirka lama garan karin",
+    "class_key":  None,
+    "crop":       "Unknown",
+    "severity":   "Unknown",
+    "treatment":  "Modelku ma garanin sawirkan. Sababtu waxay noqon kartaa: sawirku wuxuu muujinayaa geed dhan ama wax aan la xiriirin cudurrada caleemaha. Modelku wuxuu u baahan yahay sawir cad oo HAL CALEEN ah.",
+    "prevention": "Sida sawir fiican loo qaado: Ka dooro hal caleen oo dhibaatada muujinaysa, kaamirada u soo dhowee (5–15 cm), hubi in iftiinku fiican yahay (hadhka, ma aha qorraxda tooska ah), oo caleentu ha buuxiso sawirka.",
+    "model_used": "CNN (MobileNetV2)",
 }
 
 
-def predict_disease(image_bytes: bytes) -> dict:
-    # Step 1: Reject images that don't look like plant/leaf photos
-    if not is_plant_image(image_bytes):
-        return {**_UNRECOGNIZED, "confidence": 0.0}
+# ── Image preprocessing (combined: validate + resize in one PIL open) ──────
+def preprocess_and_validate(image_bytes: bytes) -> tuple[np.ndarray | None, bool]:
+    """
+    Open image once, check green ratio, and return preprocessed tensor.
+    Returns (tensor, is_plant). Avoids opening the image twice.
+    """
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-    # Step 2: Run CNN model
-    img_tensor  = preprocess_image(image_bytes)
-    predictions = cnn_model.predict(img_tensor, verbose=0)
+    # Green ratio check on small thumbnail (fast)
+    thumb = img.resize((64, 64))
+    arr_small = np.array(thumb, dtype=np.float32)
+    R, G, B = arr_small[:, :, 0], arr_small[:, :, 1], arr_small[:, :, 2]
+    green_dominant = np.sum((G > R + 10) & (G > B + 10))
+    green_ratio = green_dominant / (arr_small.shape[0] * arr_small.shape[1])
 
+    if green_ratio < 0.08:
+        return None, False
+
+    # Reuse same PIL image for model input (no second file open)
+    img_resized = img.resize((224, 224))
+    img_array = np.array(img_resized, dtype=np.float32) / 255.0
+    tensor = np.expand_dims(img_array, axis=0)
+    return tensor, True
+
+
+def _extract_crop_and_disease(class_key: str) -> tuple[str, str]:
+    """Parse crop name and disease display name from dataset class key."""
+    if "___" in class_key:
+        crop_part, disease_part = class_key.split("___", 1)
+        crop_name = crop_part.replace("_", " ").strip()
+        if disease_part.lower() == "healthy":
+            disease_name = f"{crop_name} Healthy (Caafimaad qaba)"
+        else:
+            disease_name = f"{crop_name} {disease_part.replace('_', ' ').strip()}"
+        return crop_name, disease_name
+    else:
+        crop_name = "Mango"
+        if class_key.lower() == "healthy":
+            disease_name = "Mango Healthy (Caafimaad qaba)"
+        else:
+            disease_name = f"Mango {class_key}"
+        return crop_name, disease_name
+
+
+async def get_ai_recommendation_async(disease_name: str, crop: str) -> dict:
+    """
+    Async Gemini call — runs in a thread pool so it doesn't block the event loop.
+    """
+    if _gemini_client is None:
+        return {
+            "treatment":  "Cilad ayaa ka jirtay xiriirka Gemini AI.",
+            "prevention": "Fadlan xiriir maamulaha nidaamka.",
+        }
+
+    prompt = f"""Adiga oo ah khabiir beeraleyda ka caawiya cudurrada dalagga, beeralahe Soomaali ah oo ku nool Afgoye ayaa kuu yimid.
+Wuxuu ku sheegay in beertiisa uu ku ogaaday cudur la yiraahdo: {disease_name}, geedkuna waa {crop}.
+
+Af-Soomaali fudud, caadi ah oo la fahmi karo ku qor labadan wax (HA ISTICMAALIN EMOJI):
+
+1. DAAWEYNTA: Sida loo daaweeyo. Haddii daawo ama kemiko lagu buufo loo baahdo, sheeg magaceeda saxda ah si beeralayhu suuqa ugu weydiin karo. Ka dib sharax si fudud sida loo isticmaalo.
+
+2. KAHORTAGGA: Tallaabooyinka fudud ee uu beeralayhu samayn karo si uu mustaqbalka uga hortaggo in cudurkan dib u yimaado.
+
+Jawaabta JSON format oo keliya soo celi, sidan:
+{{
+  "treatment": "...",
+  "prevention": "..."
+}}
+
+Xusuusnow: Beeralayhu waa qof da weyn oo aan waxbarasho badan lahayn. Ereyada fudud ee maalinlaha ah isticmaal, ha isticmaalin emoji ama calaamado."""
+
+    def _call_gemini():
+        try:
+            response = _gemini_client.models.generate_content(
+                model="gemini-flash-latest",
+                contents=prompt,
+            )
+            text = response.text.strip()
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+            parsed = json.loads(text)
+            return {
+                "treatment":  parsed.get("treatment", "Hada daaweynta lama soo saari karin."),
+                "prevention": parsed.get("prevention", "Hada kahortagga lama soo saari karin."),
+            }
+        except Exception as e:
+            return {
+                "treatment":  f"Cilad ayaa ka timaaday Gemini API: {str(e)}",
+                "prevention": "Fadlan kuceli mar kale ama hubi xiriirka internet-ka.",
+            }
+
+    # Run synchronous Gemini SDK call in a thread so FastAPI stays non-blocking
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _call_gemini)
+
+
+async def predict_disease(image_bytes: bytes) -> dict:
+    """
+    1. Validate leaf image + preprocess in ONE pass (faster)
+    2. Classify with CNN (warm model = instant)
+    3. Kick off Gemini async so nothing blocks
+    """
+    # Step 1: Validate + preprocess in a single image open
+    tensor, is_plant = preprocess_and_validate(image_bytes)
+
+    # Image is clearly NOT a plant (person, object, animal, etc.)
+    if not is_plant:
+        return {**_NOT_A_PLANT, "confidence": 0.0}
+
+    # Step 2: CNN inference (warm model — ~50–100 ms)
+    predictions = cnn_model.predict(tensor, verbose=0)
     confidence = float(np.max(predictions))
     class_idx  = int(np.argmax(predictions))
     class_key  = class_names[class_idx]
 
-    # Step 3: Confidence threshold guard
     if confidence < CONFIDENCE_THRESHOLD:
         return {**_UNRECOGNIZED, "confidence": round(confidence, 4)}
 
-    info = TREATMENT_MAP.get(class_key, {
-        "treatment":  "Consult your administrator for further analysis.",
-        "severity":   "Unknown",
-        "prevention": "Monitor the plant closely and document all symptoms.",
-        "crop":       "Unknown",
-    })
+    # Step 3: Parse names
+    crop_name, disease_display_name = _extract_crop_and_disease(class_key)
+
+    # Step 4: Severity
+    if "healthy" in class_key.lower():
+        severity = "None"
+    elif any(term in class_key.lower() for term in ["canker", "blight", "virus", "die_back", "anthracnose"]):
+        severity = "High"
+    else:
+        severity = "Medium"
+
+    # Step 5: AI advice (async — doesn't block)
+    if "healthy" in class_key.lower():
+        ai_advice = {
+            "treatment":  "Geedku waa caafimaad qabaa, wax daawo ah ma u baahna.",
+            "prevention": "Waraabka iyo nafaqada carada si caadi ah u sii wad oo beerta ka war hay.",
+        }
+    else:
+        ai_advice = await get_ai_recommendation_async(
+            disease_name=disease_display_name,
+            crop=crop_name,
+        )
 
     return {
-        "disease":    _make_display_name(class_key),
-        "class_key":  class_key,
-        "crop":       info["crop"],
-        "confidence": round(confidence, 4),
-        "severity":   info["severity"],
-        "treatment":  info["treatment"],
-        "prevention": info["prevention"],
-        "model_used": "CNN",
+        "disease":        disease_display_name,
+        "class_key":      class_key,
+        "crop":           crop_name,
+        "confidence":     round(confidence, 4),
+        "severity":       severity,
+        "treatment":      ai_advice["treatment"],
+        "prevention":     ai_advice["prevention"],
+        "model_used":     "CNN (MobileNetV2)",
+        "model_accuracy": "97.92%",
     }

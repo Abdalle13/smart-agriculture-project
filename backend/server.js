@@ -11,6 +11,7 @@ import sensorRegisterRoutes from './routes/sensorRegisterRoutes.js'
 import weatherRoutes from './routes/weatherRoutes.js'
 import diagnosisRoutes from './routes/diagnosisRoutes.js'
 import contactRoutes from './routes/contactRoutes.js'
+import adviseRoutes from './routes/adviseRoutes.js'
 
 import { globalLimiter } from './middleware/rateLimiter.js'
 
@@ -63,6 +64,7 @@ app.use('/api/sensors', sensorRegisterRoutes)
 app.use('/api/weather', weatherRoutes)
 app.use('/api/diagnosis', diagnosisRoutes)
 app.use('/api/contact', contactRoutes)
+app.use('/api/advise', adviseRoutes)
 
 // 404 Handler
 app.use((req, res) => {

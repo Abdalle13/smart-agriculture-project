@@ -26,12 +26,12 @@ export const createDiagnosis = async (req, res) => {
     const aiResponse = await axios.post(
       `${AI_SERVICE_URL}/predict`,
       formData,
-      { headers: formData.getHeaders(), timeout: 30000 }
+      { headers: formData.getHeaders(), timeout: 75000 }
     )
 
     const { disease, confidence, severity, treatment, prevention, model_used, class_key, crop } = aiResponse.data
 
-    // Upload image to ImageKit CDN
+    // Upload image to ImageKit CDN (always save — admins need to see all scans including unknown)
     const ext      = path.extname(req.file.originalname) || '.jpg'
     const fileName = `${Date.now()}_${req.user._id}${ext}`
     const uploaded = await imagekit.files.upload({
