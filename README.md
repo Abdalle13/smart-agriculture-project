@@ -1,4 +1,4 @@
-# AgriSense Smart Agriculture Platform 🌾🤖
+# AgriSense Smart Agriculture Platform
 
 ### Afgoye District, Somalia · IoT Soil Monitoring & AI Agronomic Advisory
 
@@ -108,3 +108,6 @@ npm install
 npm run dev
 ```
 Open `http://localhost:5173`.
+
+### Created by
+Abdalle Hussein
