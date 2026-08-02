@@ -21,6 +21,25 @@ export const getWeatherAdvisory = async (req, res) => {
     const maxRain    = maxRainDay.rain || 0
     const rainyDays  = daysList.filter(f => (f.rain || 0) >= 40)
 
+    const SOMALI_DAYS = {
+      'sun': 'Axdiga',
+      'mon': 'Isniinta',
+      'tue': 'Talaadada',
+      'wed': 'Arbacada',
+      'thu': 'Khamiista',
+      'fri': 'Jimcaha',
+      'sat': 'Sabtida',
+      'today': 'Maanta',
+      'tomorrow': 'Berri',
+    }
+    const formatSomaliDay = (dayStr) => {
+      if (!dayStr) return 'Maalinta Soo Socda'
+      const key = dayStr.toString().trim().toLowerCase()
+      return SOMALI_DAYS[key] || dayStr
+    }
+
+    const maxRainDayName = formatSomaliDay(maxRainDay.day)
+
     // 1. Thermal Stress
     if (temp >= 35) {
       tips.push({
@@ -40,14 +59,14 @@ export const getWeatherAdvisory = async (req, res) => {
     if (maxRain >= 70) {
       tips.push({
         type: 'info',
-        title: `ROOB XOOG AH OO LA FILAYO — ${maxRainDay.day || 'MAALINTA SOO SOCDA'}`,
-        message: `Waxaa saadaalinta cimiladu tilmaamaysaa in roob xooggan oo ${maxRain}% awood leh uu da'i doono maalinta ${maxRainDay.day || 'soo socota'}. Waraabinta jooji maanta, oo makiinnada biyaha nadiifi si uusan roobku biyo daadgureyn u dhalistayn.`,
+        title: `ROOB XOOG AH OO LA FILAYO — ${maxRainDayName.toUpperCase()}`,
+        message: `Waxaa saadaalinta cimiladu tilmaamaysaa in roob xooggan oo ${maxRain}% awood leh uu da'i doono maalinta ${maxRainDayName}. Waraabinta jooji maanta, oo makiinnada biyaha nadiifi si uusan roobku biyo daadgureyn u dhalistayn.`,
       })
     } else if (maxRain >= 40) {
       tips.push({
         type: 'info',
-        title: `ROOB FUDUD OO LA FILAYO — ${maxRainDay.day || 'MAALINTA SOO SOCDA'}`,
-        message: `Saadaalinta cimiladu waxay tilmaamaysaa in roob fudud uu da'i karo maalinta ${maxRainDay.day || 'soo socota'}. Waraabinta yar gareey maalmahan si looga taxaddaro biyo kororsi aan loo baahnayn.`,
+        title: `ROOB FUDUD OO LA FILAYO — ${maxRainDayName.toUpperCase()}`,
+        message: `Saadaalinta cimiladu waxay tilmaamaysaa in roob fudud uu da'i karo maalinta ${maxRainDayName}. Waraabinta yar gareey maalmahan si looga taxaddaro biyo kororsi aan loo baahnayn.`,
       })
     } else {
       // Calculate average low rain across all days

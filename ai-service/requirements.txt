@@ -5,6 +5,7 @@ pillow
 numpy
 scikit-learn
 python-multipart
+google-genai
 google-generativeai
 python-dotenv
 joblib

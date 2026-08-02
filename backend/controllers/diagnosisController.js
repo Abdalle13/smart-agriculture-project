@@ -31,18 +31,26 @@ export const createDiagnosis = async (req, res) => {
 
     const { disease, confidence, severity, treatment, prevention, model_used, class_key, crop } = aiResponse.data
 
-    // Upload image to ImageKit CDN (always save — admins need to see all scans including unknown)
-    const ext      = path.extname(req.file.originalname) || '.jpg'
-    const fileName = `${Date.now()}_${req.user._id}${ext}`
-    const uploaded = await imagekit.files.upload({
-      file:     await toFile(req.file.buffer, fileName),
-      fileName,
-      folder:   '/diagnoses',
-    })
+    // Upload image to ImageKit CDN (always save — fallback gracefully if ImageKit is unconfigured or fails)
+    let imageUrl = ''
+    try {
+      if (process.env.IMAGEKIT_PRIVATE_KEY) {
+        const ext      = path.extname(req.file.originalname) || '.jpg'
+        const fileName = `${Date.now()}_${req.user._id}${ext}`
+        const uploaded = await imagekit.files.upload({
+          file:     await toFile(req.file.buffer, fileName),
+          fileName,
+          folder:   '/diagnoses',
+        })
+        imageUrl = uploaded.url
+      }
+    } catch (imgErr) {
+      console.warn('ImageKit upload skipped/failed:', imgErr.message)
+    }
 
     const diagnosis = await DiagnosisHistory.create({
       farmerId:   req.user._id,
-      imageUrl:   uploaded.url,
+      imageUrl,
       disease,
       classKey:   class_key,
       confidence,

@@ -75,11 +75,6 @@ smart-agriculture-project/
 |---|---|
 | **Admin** | Overview analytics, farmer management, field node registry, telemetry monitoring, AI diagnosis history (Table view) |
 | **Farmer** | Dashboard with live Socket.io soil cards & advisories, telemetry charts, weather, crop disease diagnosis scanner |
-
-Default seeded accounts (`node seed.js` in `backend/`):
-- **Admin**: `admin@gmail.com` / `admin123`
-- **Farmer**: `abdalle@gmail.com` / `abdalle123`
-
 ---
 
 ## Quick Start

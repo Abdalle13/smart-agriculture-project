@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+# Ensure ai-service root directory is in sys.path for production deployment
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from utils.predictor import predict_disease

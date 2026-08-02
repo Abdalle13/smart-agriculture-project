@@ -14,9 +14,15 @@ load_dotenv()
 
 # ── Gemini Client
 _gemini_key = os.getenv("GEMINI_API_KEY", "")
-_gemini_client = genai.Client(api_key=_gemini_key) if _gemini_key else None
+try:
+    from google import genai
+    _gemini_client = genai.Client(api_key=_gemini_key) if _gemini_key else None
+except Exception as e:
+    print(f"Warning: Could not initialize Gemini Client: {e}")
+    _gemini_client = None
 
-MODEL_DIR = Path("./models")
+BASE_DIR = Path(__file__).resolve().parent.parent
+MODEL_DIR = BASE_DIR / "models"
 
 # ── Load CNN model once at startup
 cnn_model = tf.keras.models.load_model(MODEL_DIR / "cnn_best.keras")
