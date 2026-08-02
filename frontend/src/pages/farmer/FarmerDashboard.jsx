@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
@@ -70,13 +70,15 @@ export default function FarmerDashboard() {
       setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
       setError(null)
       setLoading(false)
+      // Auto-update agronomic advisory when new telemetry arrives from ESP32
+      fetchAIAdvisory(data)
     })
 
     return () => socket.disconnect()
   }, [user])
 
   // ── Fetch soil advisory (array of alert cards)
-  const fetchAIAdvisory = async (data) => {
+  const fetchAIAdvisory = useCallback(async (data) => {
     if (!data) return
     setAdvLoading(true)
     try {
@@ -96,7 +98,23 @@ export default function FarmerDashboard() {
     } finally {
       setAdvLoading(false)
     }
-  }
+  }, [])
+
+  // 🔄 Automatic sync: Whenever soil telemetry changes from ESP32, automatically re-evaluate advice!
+  useEffect(() => {
+    if (readings) {
+      fetchAIAdvisory(readings)
+    }
+  }, [
+    readings?.nitrogen,
+    readings?.phosphorus,
+    readings?.potassium,
+    readings?.moisture,
+    readings?.temperature,
+    readings?.humidity,
+    readings?.timestamp,
+    fetchAIAdvisory
+  ])
 
   if (loading) {
     return (
