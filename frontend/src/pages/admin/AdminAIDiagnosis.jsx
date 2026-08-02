@@ -20,6 +20,14 @@ const getSeverityColor = (sev) => {
   return                        { bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'text-emerald-500', title: 'text-emerald-800' }
 }
 
+// Filter out old Gemini error strings that may be stored in DB
+const isValidAdvisory = (text) => {
+  if (!text || typeof text !== 'string') return false
+  const errorPhrases = ['cilad ayaa', 'fadlan xiriir', 'gemini api', 'lama soo saari']
+  const lower = text.toLowerCase()
+  return !errorPhrases.some(p => lower.includes(p))
+}
+
 const DATE_FILTERS = [
   { label: 'Today',   value: 'today' },
   { label: '7 Days',  value: '7d'    },
@@ -72,7 +80,7 @@ function DetailModal({ log, onClose }) {
             )}
           </div>
 
-          {log.treatment && (
+          {isValidAdvisory(log.treatment) && (
             <div className={`p-4 ${colors.bg} border ${colors.border} rounded-2xl`}>
               <div className="flex items-center gap-2 mb-2">
                 {log.severity === 'None'
@@ -87,7 +95,7 @@ function DetailModal({ log, onClose }) {
             </div>
           )}
 
-          {log.prevention && (
+          {isValidAdvisory(log.prevention) && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
               <div className="flex items-center gap-2 mb-2">
                 <FiShield className="w-4 h-4 shrink-0 text-blue-500" />

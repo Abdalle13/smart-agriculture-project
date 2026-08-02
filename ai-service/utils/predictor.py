@@ -110,10 +110,7 @@ async def get_ai_recommendation_async(disease_name: str, crop: str) -> dict:
     Async Gemini call — runs in a thread pool so it doesn't block the event loop.
     """
     if _gemini_client is None:
-        return {
-            "treatment":  "Cilad ayaa ka jirtay xiriirka Gemini AI.",
-            "prevention": "Fadlan xiriir maamulaha nidaamka.",
-        }
+        return {"treatment": None, "prevention": None}
 
     prompt = f"""Adiga oo ah khabiir beeraleyda ka caawiya cudurrada dalagga, beeralahe Soomaali ah oo ku nool Afgoye ayaa kuu yimid.
 Wuxuu ku sheegay in beertiisa uu ku ogaaday cudur la yiraahdo: {disease_name}, geedkuna waa {crop}.
@@ -149,10 +146,8 @@ Xusuusnow: Beeralayhu waa qof da weyn oo aan waxbarasho badan lahayn. Ereyada fu
                 "prevention": parsed.get("prevention", "Hada kahortagga lama soo saari karin."),
             }
         except Exception as e:
-            return {
-                "treatment":  f"Cilad ayaa ka timaaday Gemini API: {str(e)}",
-                "prevention": "Fadlan kuceli mar kale ama hubi xiriirka internet-ka.",
-            }
+            print(f"Gemini advisory error: {e}")
+            return {"treatment": None, "prevention": None}
 
     # Run synchronous Gemini SDK call in a thread so FastAPI stays non-blocking
     loop = asyncio.get_event_loop()

@@ -369,25 +369,34 @@ export default function FarmerDiagnosis() {
                 )}
               </div>
 
-              {/* Treatment */}
-              <div className={`p-4 ${colors.bg} border ${colors.border} rounded-2xl`}>
-                <div className="flex items-center gap-2 mb-2">
-                  {result.severity === 'None'
-                    ? <FiCheckCircle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
-                    : result.severity === 'Unknown'
-                    ? <FiAlertCircle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
-                    : <FiAlertTriangle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
-                  }
-                  <p className={`text-xs font-bold uppercase tracking-wider ${colors.title}`}>
-                    {result.severity === 'Unknown' ? 'Xaaladda Sawirka'
-                     : result.severity === 'None'  ? 'Xaaladda Geedka'
-                     : 'Daaweynta Cudurka'}
-                  </p>
+              {/* Treatment — only render when we have real advice */}
+              {result.treatment ? (
+                <div className={`p-4 ${colors.bg} border ${colors.border} rounded-2xl`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {result.severity === 'None'
+                      ? <FiCheckCircle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
+                      : result.severity === 'Unknown'
+                      ? <FiAlertCircle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
+                      : <FiAlertTriangle className={`w-4 h-4 shrink-0 ${colors.icon}`} />
+                    }
+                    <p className={`text-xs font-bold uppercase tracking-wider ${colors.title}`}>
+                      {result.severity === 'Unknown' ? 'Xaaladda Sawirka'
+                       : result.severity === 'None'  ? 'Xaaladda Geedka'
+                       : 'Daaweynta Cudurka'}
+                    </p>
+                  </div>
+                  <p className="text-sm text-slate-700 leading-relaxed">{result.treatment}</p>
                 </div>
-                <p className="text-sm text-slate-700 leading-relaxed">{result.treatment}</p>
-              </div>
+              ) : (
+                /* When Gemini advisory is unavailable — show quiet note, not in a result card */
+                result.severity !== 'Unknown' && result.severity !== 'None' && (
+                  <p className="text-xs text-slate-400 text-center py-2">
+                    AI advisory is temporarily unavailable for this diagnosis.
+                  </p>
+                )
+              )}
 
-              {/* Prevention */}
+              {/* Prevention — only render when we have real advice */}
               {result.prevention && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
                   <div className="flex items-center gap-2 mb-2">
@@ -402,6 +411,7 @@ export default function FarmerDiagnosis() {
                 </div>
               )}
             </div>
+
 
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 text-center text-slate-400">
