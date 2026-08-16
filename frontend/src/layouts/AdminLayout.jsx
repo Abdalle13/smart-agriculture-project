@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { ROUTES, APP_NAME } from '../utils/constants'
 import {
   FiGrid, FiUsers, FiRadio, FiBarChart2, FiZap, FiMessageSquare,
-  FiLogOut, FiMenu, FiX, FiShield, FiBell
+  FiLogOut, FiMenu, FiX, FiShield, FiBell, FiFileText
 } from 'react-icons/fi'
 import logo from '../assets/logo.svg'
 import api from '../services/api'
@@ -14,8 +14,9 @@ const adminNavItems = [
   { path: ROUTES.ADMIN_USERS,        label: 'Farmer Management',   Icon: FiUsers     },
   { path: ROUTES.ADMIN_SENSORS,      label: 'Field Node Management', Icon: FiRadio     },
   { path: ROUTES.ADMIN_DATA_MONITOR, label: 'Data Monitoring',     Icon: FiBarChart2 },
-  { path: ROUTES.ADMIN_AI_DIAGNOSIS, label: 'AI Diagnosis',        Icon: FiZap       },
+  { path: ROUTES.ADMIN_AI_DIAGNOSIS, label: 'Diagnosis',        Icon: FiZap       },
   { path: ROUTES.ADMIN_SUPPORT,      label: 'Support Messages',    Icon: FiMessageSquare },
+  { path: ROUTES.ADMIN_REPORTS,      label: 'Reports',             Icon: FiFileText  },
 ]
 
 export default function AdminLayout() {

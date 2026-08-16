@@ -30,6 +30,7 @@
     "mongoose": "^9.6.2",
     "multer": "^2.2.0",
     "nodemon": "^3.1.14",
+    "pdfkit": "^0.19.1",
     "socket.io": "^4.8.3"
   }
 }

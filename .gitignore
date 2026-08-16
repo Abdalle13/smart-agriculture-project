@@ -35,6 +35,7 @@ Thumbs.db
 ai-service/models/*
 !ai-service/models/cnn_best.keras
 !ai-service/models/class_names.json
+!ai-service/models/fallback_advice.json
 ai-service/.venv/
 ai-service/venv/
 **/__pycache__/

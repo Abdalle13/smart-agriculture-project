@@ -6,6 +6,7 @@ import {
   updateSensor,
   getLatestReadings,
   getSensorHistory,
+  downloadSensorHistoryPDF,
   addReading,
   getAllReadings
 } from '../controllers/sensorRegisterController.js'
@@ -37,5 +38,8 @@ router.route('/:id/latest')
 
 router.route('/:id/history')
   .get(protect, getSensorHistory)
+
+router.route('/:id/history/pdf')
+  .get(protect, downloadSensorHistoryPDF)
 
 export default router

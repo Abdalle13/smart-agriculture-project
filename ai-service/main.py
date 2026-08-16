@@ -12,7 +12,7 @@ from utils.predictor import predict_disease
 
 app = FastAPI(
     title="AgriSense AI Service",
-    description="Crop Disease Detection Microservice using MobileNetV2 CNN & Gemini 2.5 Flash AI Advisor.",
+    description="Crop Disease Detection Microservice using MobileNetV2 CNN & Gemini AI Advisor.",
     version="2.1.0",
 )
 
@@ -32,7 +32,7 @@ def health_check():
     return {
         "status":  "ok",
         "service": "AgriSense AI Microservice",
-        "engine":  "CNN MobileNetV2 (97.92%) + Gemini 2.5 Flash AI Advisor",
+        "engine":  "CNN MobileNetV2 (97.92%) + Gemini AI Advisor",
     }
 
 

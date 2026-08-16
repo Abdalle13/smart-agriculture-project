@@ -31,6 +31,11 @@ with open(MODEL_DIR / "class_names.json") as f:
     data = json.load(f)
     class_names = data["class_names"]
 
+with open(MODEL_DIR / "fallback_advice.json", encoding="utf-8") as f:
+    _advice_data = json.load(f)
+    _GENERIC_FALLBACK = _advice_data["generic_fallback"]
+    FALLBACK_ADVICE = _advice_data["fallback_advice"]
+
 # ── Warm-up: run a dummy prediction so the first real request is instant ───
 _dummy = np.zeros((1, 224, 224, 3), dtype=np.float32)
 cnn_model.predict(_dummy, verbose=0)
@@ -51,7 +56,7 @@ _NOT_A_PLANT = {
 
 # Returned when image looks like a plant but model can't classify it (low confidence)
 _UNRECOGNIZED = {
-    "disease":    "Sawirka lama garan karin",
+    "disease":    "Sawirka lama garan karo",
     "class_key":  None,
     "crop":       "Unknown",
     "severity":   "Unknown",
@@ -105,12 +110,20 @@ def _extract_crop_and_disease(class_key: str) -> tuple[str, str]:
         return crop_name, disease_name
 
 
-async def get_ai_recommendation_async(disease_name: str, crop: str) -> dict:
+
+# Backend (Node.js) gives the whole /predict request 75s total — cap Gemini
+# under that so a slow response still leaves room for a fallback + reply.
+GEMINI_TIMEOUT_SECONDS = 30
+
+
+async def get_ai_recommendation_async(disease_name: str, crop: str, class_key: str) -> dict:
     """
     Async Gemini call — runs in a thread pool so it doesn't block the event loop.
+    Falls back to a static Somali lookup (FALLBACK_ADVICE) when Gemini is slow,
+    unavailable, or the client wasn't configured, so the farmer never sees null.
     """
     if _gemini_client is None:
-        return {"treatment": None, "prevention": None}
+        return FALLBACK_ADVICE.get(class_key, _GENERIC_FALLBACK)
 
     prompt = f"""Adiga oo ah khabiir beeraleyda ka caawiya cudurrada dalagga, beeralahe Soomaali ah oo ku nool Afgoye ayaa kuu yimid.
 Wuxuu ku sheegay in beertiisa uu ku ogaaday cudur la yiraahdo: {disease_name}, geedkuna waa {crop}.
@@ -132,7 +145,7 @@ Xusuusnow: Beeralayhu waa qof da weyn oo aan waxbarasho badan lahayn. Ereyada fu
     def _call_gemini():
         try:
             response = _gemini_client.models.generate_content(
-                model="gemini-flash-latest",
+                model="gemini-3.1-flash-lite",
                 contents=prompt,
             )
             text = response.text.strip()
@@ -147,11 +160,21 @@ Xusuusnow: Beeralayhu waa qof da weyn oo aan waxbarasho badan lahayn. Ereyada fu
             }
         except Exception as e:
             print(f"Gemini advisory error: {e}")
-            return {"treatment": None, "prevention": None}
+            return FALLBACK_ADVICE.get(class_key, _GENERIC_FALLBACK)
 
-    # Run synchronous Gemini SDK call in a thread so FastAPI stays non-blocking
+    # Run synchronous Gemini SDK call in a thread so FastAPI stays non-blocking.
+    # Cap the wait so a slow/hanging Gemini call can't eat the whole request —
+    # the Node backend only waits 75s total for /predict, so give up on Gemini
+    # well before that and use the static fallback instead.
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, _call_gemini)
+    try:
+        return await asyncio.wait_for(
+            loop.run_in_executor(None, _call_gemini),
+            timeout=GEMINI_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        print(f"Gemini advisory timeout after {GEMINI_TIMEOUT_SECONDS}s")
+        return FALLBACK_ADVICE.get(class_key, _GENERIC_FALLBACK)
 
 
 async def predict_disease(image_bytes: bytes) -> dict:
@@ -197,6 +220,7 @@ async def predict_disease(image_bytes: bytes) -> dict:
         ai_advice = await get_ai_recommendation_async(
             disease_name=disease_display_name,
             crop=crop_name,
+            class_key=class_key,
         )
 
     return {

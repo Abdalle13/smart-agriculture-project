@@ -129,7 +129,7 @@ export const getSoilAdvisory = async (req, res) => {
     } else if (moisture < 35) {
       tips.push({
         type: 'danger',
-        title: 'CIIDDU AADNA AYEY U ENGEGAN TAHAY',
+        title: 'CIIDDU AAD AYEY U ENGEGAN TAHAY',
         message: `Qoyaanka ciiddu hadda waa ${moisture}%, kaas oo aad u hooseeya. Dhirtu waxay u baahan tahay biyo si degdeg ah. Beerta waraabi maanta lafigeed si looga hortago in dhirtu engegto.`,
       })
     }
@@ -144,7 +144,7 @@ export const getSoilAdvisory = async (req, res) => {
     } else if (nitrogen > 200) {
       tips.push({
         type: 'warning',
-        title: 'NITROGEN (N) WAA AADNA U BADAN YAHAY',
+        title: 'NITROGEN (N) AAD AYUU U BADAN YAHAY',
         message: `Nitrogen-ka ciiddu waa ${nitrogen} mg/kg, kaas oo ka badan xaddiga caafimaadka. Nitrogen badan wuxuu caleemaha guban u keeni karaa oo dhirta dhibi karaa. Jooji bacriminta dheeriga ah ee aad maanta isticmaalayso illaa tiradaas hoos u dhacdo.`,
       })
     }

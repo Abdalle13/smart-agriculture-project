@@ -260,23 +260,27 @@ export default function FarmerDiagnosis() {
                     <FiUpload className="w-6 h-6 text-emerald-500" />
                   </div>
                   <p className="text-sm font-semibold text-slate-700">Upload from gallery</p>
+                  <p className="text-xs text-slate-400 mt-1 sm:hidden">Your phone will also let you take a new photo from here</p>
                   <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
                 </label>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-slate-200" />
-                  <span className="text-xs text-slate-400 font-medium">or</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
+                {/* Camera capture — hidden on mobile, where the gallery picker above already offers the device camera */}
+                <div className="hidden sm:flex sm:flex-col sm:gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-slate-200" />
+                    <span className="text-xs text-slate-400 font-medium">or</span>
+                    <div className="flex-1 h-px bg-slate-200" />
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={openCamera}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-sm rounded-2xl transition-all cursor-pointer"
-                >
-                  <FiCamera className="w-4 h-4" />
-                  Take Photo with Camera
-                </button>
+                  <button
+                    type="button"
+                    onClick={openCamera}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-sm rounded-2xl transition-all cursor-pointer"
+                  >
+                    <FiCamera className="w-4 h-4" />
+                    Take Photo with Camera
+                  </button>
+                </div>
               </div>
             ) : (
               /* Preview image — fills the card nicely */

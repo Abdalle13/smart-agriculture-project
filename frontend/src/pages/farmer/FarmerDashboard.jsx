@@ -6,7 +6,7 @@ import { io } from 'socket.io-client'
 import { SENSOR_THRESHOLDS, SENSOR_CONFIG, ROUTES } from '../../utils/constants'
 import {
   FiZap, FiBarChart2, FiCloud, FiCpu, FiChevronRight,
-  FiAlertOctagon, FiAlertTriangle, FiCheckCircle
+  FiAlertOctagon, FiAlertTriangle, FiCheckCircle, FiAlertCircle
 } from 'react-icons/fi'
 
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'
@@ -20,65 +20,20 @@ export default function FarmerDashboard() {
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState(null)
   const [lastUpdated,  setLastUpdated]  = useState('')
-  const hasFetchedAI = useRef(false)
+  const [now,          setNow]          = useState(() => Date.now())
+  const hasFetchedAdvisory = useRef(false)
+
+  // Tick every 15s so the staleness check below re-evaluates even without new readings
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 15000)
+    return () => clearInterval(timer)
+  }, [])
 
   // Pick up a sensor an admin assigned after this session started
   useEffect(() => { refreshUser() }, [refreshUser])
 
-  // Load latest reading once on mount
-  useEffect(() => {
-    const activeSensorId = user?.sensorIds?.[0]
-    if (!activeSensorId) {
-      setLoading(false)
-      return
-    }
-    const fetchLatest = async () => {
-      try {
-        setError(null)
-        const { data: res } = await api.get(`/sensors/${activeSensorId}/latest`)
-        if (res.data) {
-          setReadings(res.data)
-          setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
-          // Fetch AI advisory once on first load
-          if (!hasFetchedAI.current) {
-            hasFetchedAI.current = true
-            fetchAIAdvisory(res.data)
-          }
-        }
-      } catch (err) {
-        setError(err.response?.data?.message || 'Could not reach the sensor probe. Check your connection.')
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchLatest()
-  }, [user])
-
-  // Real-time updates via Socket.io
-  useEffect(() => {
-    const sensorId = user?.sensorIds?.[0]
-    if (!sensorId) return
-
-    const socket = io(SOCKET_URL, { transports: ['websocket'] })
-
-    socket.on('connect', () => {
-      socket.emit('joinSensor', sensorId)
-    })
-
-    socket.on('newReading', (data) => {
-      setReadings(data)
-      setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
-      setError(null)
-      setLoading(false)
-      // Auto-update agronomic advisory when new telemetry arrives from ESP32
-      fetchAIAdvisory(data)
-    })
-
-    return () => socket.disconnect()
-  }, [user])
-
   // ── Fetch soil advisory (array of alert cards)
-  const fetchAIAdvisory = useCallback(async (data) => {
+  const fetchSoilAdvisory = useCallback(async (data) => {
     if (!data) return
     setAdvLoading(true)
     try {
@@ -100,10 +55,62 @@ export default function FarmerDashboard() {
     }
   }, [])
 
+  // Load latest reading once on mount
+  useEffect(() => {
+    const activeSensorId = user?.sensorIds?.[0]
+    if (!activeSensorId) {
+      setLoading(false)
+      return
+    }
+    const fetchLatest = async () => {
+      try {
+        setError(null)
+        const { data: res } = await api.get(`/sensors/${activeSensorId}/latest`)
+        if (res.data) {
+          setReadings(res.data)
+          setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+          // Fetch soil advisory once on first load
+          if (!hasFetchedAdvisory.current) {
+            hasFetchedAdvisory.current = true
+            fetchSoilAdvisory(res.data)
+          }
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || 'Could not reach the sensor probe. Check your connection.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLatest()
+  }, [user, fetchSoilAdvisory])
+
+  // Real-time updates via Socket.io
+  useEffect(() => {
+    const sensorId = user?.sensorIds?.[0]
+    if (!sensorId) return
+
+    const socket = io(SOCKET_URL, { transports: ['websocket'] })
+
+    socket.on('connect', () => {
+      socket.emit('joinSensor', sensorId)
+    })
+
+    socket.on('newReading', (data) => {
+      setReadings(data)
+      setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+      setError(null)
+      setLoading(false)
+      // Auto-update agronomic advisory when new telemetry arrives from ESP32
+      fetchSoilAdvisory(data)
+    })
+
+    return () => socket.disconnect()
+  }, [user, fetchSoilAdvisory])
+
   // 🔄 Automatic sync: Whenever soil telemetry changes from ESP32, automatically re-evaluate advice!
   useEffect(() => {
     if (readings) {
-      fetchAIAdvisory(readings)
+      fetchSoilAdvisory(readings)
     }
   }, [
     readings?.nitrogen,
@@ -113,7 +120,7 @@ export default function FarmerDashboard() {
     readings?.temperature,
     readings?.humidity,
     readings?.timestamp,
-    fetchAIAdvisory
+    fetchSoilAdvisory
   ])
 
   if (loading) {
@@ -131,7 +138,7 @@ export default function FarmerDashboard() {
   // 5-minute freshness check — if last reading is older than 5 mins, treat sensor as offline
   const STALE_MS = 5 * 60 * 1000
   const isStale = hasData && readings?.timestamp
-    ? (Date.now() - new Date(readings.timestamp).getTime()) > STALE_MS
+    ? (now - new Date(readings.timestamp).getTime()) > STALE_MS
     : false
 
   const getStatusLevel = (param, value) => {
@@ -398,7 +405,7 @@ export default function FarmerDashboard() {
                 <FiCpu className="w-4 h-4 text-emerald-600" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-emerald-700">AI Crop Diagnosis</p>
+                <p className="text-sm font-semibold text-emerald-700">Crop Diagnosis</p>
                 <p className="text-xs text-slate-400 mt-0.5">Scan crop leaves for disease</p>
               </div>
               <FiChevronRight className="ml-auto text-slate-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all w-4 h-4 shrink-0" />

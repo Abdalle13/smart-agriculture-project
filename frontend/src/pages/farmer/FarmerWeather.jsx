@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 import { FiRefreshCw, FiAlertTriangle, FiAlertOctagon, FiCheckCircle, FiInfo } from 'react-icons/fi'
 import {
@@ -62,7 +61,7 @@ export default function FarmerWeather() {
         } else {
           setApiError(res.message || 'Unknown error occurred')
         }
-      } catch (err) {
+      } catch {
         setApiError('Could not reach weather service.')
       } finally {
         setLoading(false)
@@ -201,6 +200,10 @@ export default function FarmerWeather() {
               <div>
                 <p className="text-xs text-slate-400 font-bold uppercase">Wind Speed</p>
                 <p className="text-base font-semibold text-slate-800 mt-0.5">{weather?.current?.windSpeed} km/h</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase">Rain Chance</p>
+                <p className="text-base font-semibold text-slate-800 mt-0.5">{weather?.current?.rainChance}%</p>
               </div>
               <div>
                 <p className="text-xs text-slate-400 font-bold uppercase">Visibility</p>

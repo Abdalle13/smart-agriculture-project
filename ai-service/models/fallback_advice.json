@@ -1,0 +1,96 @@
+{
+  "generic_fallback": {
+    "treatment": "Adeegga talada AI-ga hadda ma shaqeynayo. Fadlan mar dambe isku day, ama weydii dad kale oo beeraley ah ama xafiiska beeraha ee deegaankaaga.",
+    "prevention": "Sii wad waraabinta caadiga ah, oo caleemaha geedka mar walba fiiri si aad u aragto haddii cudurku sii fidayo."
+  },
+  "fallback_advice": {
+    "Anthracnose": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Copper fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Ku dar biyaha oo ku buufi geedka ka hor iyo ka dib marka ubaxu soo baxo. 2. Caleemaha iyo miraha cudurka qaba ka gooy, ka dibna gub si aanu cudurku u sii fidin.",
+      "prevention": "1. Laamaha geedka gooy si hawo badan u dhex marto. 2. Iska ilaali in miraha lagu waraabiyo biyo toos ah."
+    },
+    "Bacterial Canker": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Copper fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Laanta cudurka qabta ka gooy meel ka fog calaamadaha (illaa 30 cm). 2. Goobta aad ka gooyd ku shub dawada. 3. Mindida aad wax ku gooyso nadiifi mar kasta ka hor inta aadan geed kale u wareegin.",
+      "prevention": "1. Iska ilaali in geedka la dhaawaco. 2. Mar kasta oo aad laamaha ka gooyso, dawada ku dar goobta."
+    },
+    "Cutting Weevil": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Insecticide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Sunta ku shub laamaha iyo carrada geedka ku wareegsan. 2. Laamaha cayayaanku ku jiro ka gooy oo gub.",
+      "prevention": "1. Geedaha mar walba fiiri. 2. Alwaaxda iyo laamaha dhimatay ka saar beerta — waa halka cayayaanku ku dhasho."
+    },
+    "Die Back": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Copper fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Laamaha dhintay ka gooy illaa aad gaadho meel geedku caafimaad ka qabo. 2. Goobta aad ka gooyd ku shub dawada. 3. Geedka sii nafaqo dheeraad ah ama bacrimin.",
+      "prevention": "1. Geedka ha u daynin inuu biyo la'aan galo. 2. Hubi carrada inay leedahay nafaqo ku filan."
+    },
+    "Gall Midge": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Insecticide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Marka caleemuhu curmayaan, sunta ku shub geedka. 2. Caleemaha barta leh isla markiiba ka gooy oo gub.",
+      "prevention": "1. Sunta ku shub wakhtiga caleemuhu curmayaan oo keliya, waana wakhtiga cayayaanku ugu badan yahay."
+    },
+    "Powdery Mildew": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Ku shub ama ku buufi caleemaha geedka. 2. Waraabinta samee wakhtiga qabow ee maalinta.",
+      "prevention": "1. Laamaha gooy si hawadu u dhex marto. 2. Iska ilaali bacrinta xad-dhaafka ah."
+    },
+    "Sooty Mould": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Insecticide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Sunta ku shub si aad u xakamayso cayayaanka caleemaha nuugaya ee boodhka madow keena. 2. Caleemaha ku dhaq biyo iyo saabuun fudud.",
+      "prevention": "1. Had iyo jeer fiiri geedka. 2. Hore u xakameey cayayaanka yaryar ka hor inta aanay badnaan."
+    },
+    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Dawada ku shub ama ku buufi caleemaha geedka. 2. Caleemaha cudurka qaba ka gooy oo gub.",
+      "prevention": "1. Sannad kasta beerta meel kale ku beer (ha isku beerin galley meel isku ah 2-3 sano). 2. Dooro abuur u adkaysta cudurka."
+    },
+    "Corn_(maize)___Common_rust_": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Marka aad aragto bar-bar cas oo caleemaha ku yaal, dawada ku shub caleemaha. 2. Beerta had iyo jeer fiiri.",
+      "prevention": "1. Dooro abuur u adkaysta cudurka. 2. Beerta fiiri wakhtiga hawadu diirran tahay oo qoyan tahay."
+    },
+    "Corn_(maize)___Northern_Leaf_Blight": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Marka calaamadahu bilaabmaan, dawada ku shub geedka. 2. Goosashada ka dib, hadhaagga dalagga gub ama god ku aas.",
+      "prevention": "1. Dooro abuur u adkaysta cudurka. 2. Ha ku beerin galley meel isku ah sanad ka dib sanad."
+    },
+    "Pepper,_bell___Bacterial_spot": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Copper fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Dawada ku shub geedka. 2. Caleemaha aadka cudurka u qaba isla markiiba ka gooy. 3. Waraabinta hoosta geedka ka samee, ha ku shubin biyo caleemaha korkooda.",
+      "prevention": "1. Isticmaal abuur la hubiyay oo cudur la'aan ah. 2. Beerta ha ku shaqeyn marka ay qoyan tahay."
+    },
+    "Potato___Early_blight": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Dawada ku shub caleemaha geedka. 2. Caleemaha cudurka qaba ka gooy oo gub.",
+      "prevention": "1. Sannad kasta beerta meel kale ku beer. 2. Carrada ku dabool caws qallalan si aan biyuhu caleemaha ugu boodin."
+    },
+    "Potato___Late_blight": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Isla markiiba dawada ku shub geedka — cudurkan si degdeg ah ayuu u fidaa. 2. Dhirta cudurka aadka u qaba gub, ha isticmaalin sida bacriminta carrada.",
+      "prevention": "1. Isticmaal abuur la hubiyay. 2. Dawo ka hortag ah ku dar marka hawadu qoyan tahay."
+    },
+    "Tomato___Bacterial_spot": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Copper fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Dawada ku shub geedka. 2. Caleemaha aadka cudurka u qaba ka gooy. 3. Ha ku shubin biyo caleemaha korkooda — waraabinta hoosta geedka ka samee.",
+      "prevention": "1. Isticmaal geedo cusub oo cudur la'aan ah. 2. Waraabinta hoosta geedka ka samee, ma aha caleemaha korkooda."
+    },
+    "Tomato___Early_blight": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Dawada ku shub geedka. 2. Caleemaha hoose ee cudurka qaba ka gooy. 3. Geedka sii nafaqo ku filan.",
+      "prevention": "1. Carrada ku dabool caws qallalan. 2. Waraabinta hoosta geedka ka samee si caleemuhu aanay u qoyin."
+    },
+    "Tomato___Late_blight": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Isla markiiba dawada ku shub geedka — cudurkan si aad u degdeg ah ayuu u fidaa. 2. Dhirta aadka cudurka u qabta gub ama god ku aas.",
+      "prevention": "1. Cimilada la soco. 2. Dawo ka hortag ah ku dar marka la filayo qoyaan sare."
+    },
+    "Tomato___Leaf_Mold": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Laamaha gooy si hawadu u dhex marto. 2. Dawada ku shub geedka. 3. Haddii tuunel ama greenhouse ku beertay, qoyaanka dhexdiisa hoos u dhig.",
+      "prevention": "1. Laamaha had iyo jeer gooy si hawadu u fiicnaato. 2. Iska ilaali meelaha qoyaanka badan."
+    },
+    "Tomato___Septoria_leaf_spot": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Dawada ku shub geedka. 2. Caleemaha hoose ee cudurka qaba ka gooy. 3. Ha ku shubin biyo caleemaha korkooda.",
+      "prevention": "1. Sannad kasta beerta meel kale ku beer. 2. Goosashada ka dib hadhaagga dhirta oo dhan ka saar beerta."
+    },
+    "Tomato___Spider_mites Two-spotted_spider_mite": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Miticide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Dawada ku shub geedka. 2. Geedka waraabi si joogto ah — caaraduhu waxay ku fiicnaadaan geed engegan.",
+      "prevention": "1. Waraabka joogto u sii wad. 2. Iska ilaali boodhka badan ee ku dul dhaca geedka."
+    },
+    "Tomato___Target_Spot": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Fungicide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Dawada ku shub geedka. 2. Caleemaha cudurka qaba isla markiiba ka gooy oo gub.",
+      "prevention": "1. Laamaha gooy si hawadu u dhex marto. 2. Iska ilaali bacrinta xad-dhaafka ah."
+    },
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Insecticide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Dhirta cudurka qabta ka gooy oo gub. 2. Sunta ku shub geedka si aad u xakamayso cayayaanka cad (whitefly) ee cudurka geeya geed ilaa geed.",
+      "prevention": "1. Shabag ka hortagga cayayaanka geedka ku dul dhig marka uu yar yahay. 2. Dooro abuur u adkaysta cudurka."
+    },
+    "Tomato___Tomato_mosaic_virus": {
+      "treatment": "Dukaanka beeraha weydii ama tus dawada la yiraahdo Insecticide. Markaad dawada soo gadato, sida loo isticmaalo waa tan: 1. Fayraskan dawo toos ah ma laha. 2. Dhirta cudurka qabta isla markiiba ka gooy oo gub si aanu ugu faafin dhirta kale. 3. Aaladaha aad wax ku gooyso si fiican u nadiifi.",
+      "prevention": "1. Gacmaha dhaq ka hor inta aadan taaban dhirta. 2. Cayayaanka yaryar ee ku dul fadhiya caleemaha xakameey."
+    }
+  }
+}

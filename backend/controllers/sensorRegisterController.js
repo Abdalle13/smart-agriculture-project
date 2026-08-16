@@ -1,3 +1,4 @@
+import PDFDocument from 'pdfkit'
 import SensorRegister from '../models/SensorRegister.js'
 import Sensor from '../models/Sensor.js'
 import User from '../models/User.js'
@@ -63,6 +64,58 @@ export const getSensorHistory = async (req, res) => {
     }))
 
     res.json({ success: true, data: formatted })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+/**
+ * @desc    Download the full sensor telemetry history as a PDF report
+ * @route   GET /api/sensors/:id/history/pdf?hours=X
+ * @access  Private
+ */
+export const downloadSensorHistoryPDF = async (req, res) => {
+  const sensorId = req.params.id
+  const hours = parseInt(req.query.hours) || 12
+
+  try {
+    const timeThreshold = new Date(Date.now() - hours * 60 * 60 * 1000)
+
+    const [readings, sensor] = await Promise.all([
+      Sensor.find({ sensorId, createdAt: { $gte: timeThreshold } }).sort({ createdAt: 1 }),
+      SensorRegister.findById(sensorId),
+    ])
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="agrisense_sensor_history_${sensorId}.pdf"`)
+
+    const doc = new PDFDocument({ margin: 50 })
+    doc.pipe(res)
+
+    doc.fontSize(18).fillColor('#059669').text('AgriSense — Soil Sensor History Report', { align: 'center' })
+    doc.moveDown(0.3)
+    doc.fontSize(10).fillColor('#64748b').text(
+      `Field: ${req.user.fieldName || 'My Field'}  |  Node: ${sensor?.name || sensorId}  |  Last ${hours} hours`,
+      { align: 'center' }
+    )
+    doc.moveDown(0.2)
+    doc.fontSize(9).fillColor('#94a3b8').text(`Generated ${new Date().toLocaleString()}`, { align: 'center' })
+    doc.moveDown(1)
+
+    if (readings.length === 0) {
+      doc.fontSize(11).fillColor('#334155').text('No sensor readings were recorded in this time range.')
+    } else {
+      doc.fontSize(9).fillColor('#334155')
+      readings.forEach(r => {
+        const time = new Date(r.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+        doc.text(
+          `${time}  —  N: ${r.nitrogen ?? 0} mg/kg, P: ${r.phosphorus ?? 0} mg/kg, K: ${r.potassium ?? 0} mg/kg, ` +
+          `Temp: ${r.temperature ?? 0}°C, Humidity: ${r.humidity ?? 0}%, Moisture: ${r.moisture ?? 0}%`
+        )
+      })
+    }
+
+    doc.end()
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
   }

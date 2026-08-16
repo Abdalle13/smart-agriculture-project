@@ -113,17 +113,11 @@ export const getWeather = async (req, res) => {
       }
     })
 
-    // Build smart weather alerts
-    const alerts = []
-    const windKmh      = Math.round((current.wind?.speed || 0) * 3.6)
-    const rainTomorrow = forecastDays[1]?.rain || 0
+    const windKmh = Math.round((current.wind?.speed || 0) * 3.6)
 
-    if (windKmh > 35) {
-      alerts.push({ type: 'warning', message: `Strong winds (${windKmh} km/h). Secure lightweight irrigation equipment and crop covers.` })
-    }
-    if (rainTomorrow >= 60) {
-      alerts.push({ type: 'info', message: `Rain probability tomorrow is ${rainTomorrow}%. Reduce today's irrigation to prevent waterlogging.` })
-    }
+    // OWM's current-weather endpoint has no rain-probability field — pop only exists
+    // on forecast entries, so use the nearest upcoming 3-hour bucket as "rain chance now"
+    const nearestForecastPop = forecast.list[0]?.pop ?? 0
 
     const currentDesc = current.weather[0].description
     res.json({
@@ -135,12 +129,12 @@ export const getWeather = async (req, res) => {
           feelsLike:   Math.round(current.main.feels_like),
           humidity:    current.main.humidity,
           windSpeed:   windKmh,
+          rainChance:  Math.round(nearestForecastPop * 100),
           description: currentDesc.charAt(0).toUpperCase() + currentDesc.slice(1),
           icon:        getWeatherIcon(current.weather[0].id),
           visibility:  parseFloat(((current.visibility || 10000) / 1000).toFixed(1)),
         },
         forecast:  forecastDays,
-        alerts,
         updatedAt: new Date().toISOString(),
       }
     })

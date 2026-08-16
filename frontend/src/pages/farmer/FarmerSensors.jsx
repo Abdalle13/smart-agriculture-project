@@ -58,53 +58,28 @@ export default function FarmerSensors() {
 
   const [exporting, setExporting] = useState(false)
 
-  // Export ALL telemetry parameters to a single CSV file
-  const handleExportCSV = async () => {
+  // Export ALL telemetry parameters as a downloadable PDF report
+  const handleExportPDF = async () => {
     const activeSensorId = user?.sensorIds?.[0]
     if (!activeSensorId) return
 
     setExporting(true)
     try {
-      const { data: res } = await api.get(`/sensors/${activeSensorId}/history`, {
-        params: { parameter: 'all', hours: timeFilter }
+      const response = await api.get(`/sensors/${activeSensorId}/history/pdf`, {
+        params: { hours: timeFilter },
+        responseType: 'blob',
+        timeout: 30000,
       })
-      const allRows = res.data || []
-
-      // Build complete CSV headers
-      const csvRows = [
-        ['Report: AgriSense Complete Soil & Telemetry Log'],
-        ['Farmer Field', user?.fieldName || 'Active Field'],
-        ['Time Range', `Last ${timeFilter} Hours`],
-        ['Generated At', new Date().toLocaleString()],
-        [''],
-        ['Timestamp', 'Nitrogen (mg/kg)', 'Phosphorus (mg/kg)', 'Potassium (mg/kg)', 'Temperature (°C)', 'Air Humidity (%)', 'Soil Moisture (%)']
-      ]
-
-      // Fill data rows
-      allRows.forEach(r => {
-        csvRows.push([
-          r.time,
-          r.nitrogen,
-          r.phosphorus,
-          r.potassium,
-          r.temperature,
-          r.humidity,
-          r.moisture
-        ])
-      })
-
-      const csvContent = "data:text/csv;charset=utf-8,"
-        + csvRows.map(e => e.map(val => `"${val}"`).join(",")).join("\n")
-
-      const encodedUri = encodeURI(csvContent)
-      const link = document.createElement("a")
-      link.setAttribute("href", encodedUri)
-      link.setAttribute("download", `agrisense_all_telemetry_${timeFilter}h.csv`)
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `agrisense_sensor_history_${timeFilter}h.pdf`)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Error exporting CSV:', err)
+      console.error('Error exporting PDF:', err)
     } finally {
       setExporting(false)
     }
@@ -119,17 +94,17 @@ export default function FarmerSensors() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Soil Telemetry Analytics</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Soil Sensor History</h1>
           <p className="text-slate-500 text-sm">Analyze and export historical soil chemistry and condition logs</p>
         </div>
 
         <button
-          onClick={handleExportCSV}
+          onClick={handleExportPDF}
           disabled={loading || exporting || !user?.sensorIds?.length}
           className="btn-primary self-start sm:self-auto py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           <FiDownload className="w-4 h-4" />
-          {exporting ? 'Exporting All...' : 'Export All CSV'}
+          {exporting ? 'Generating PDF...' : 'Export All PDF'}
         </button>
       </div>
 

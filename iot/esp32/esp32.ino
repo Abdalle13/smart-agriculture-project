@@ -4,11 +4,11 @@
 #include <ModbusMaster.h>
 
 // WiFi credentials
-const char* ssid     = "Cabdi";
-const char* password = "99999999";
+const char* ssid     = "Ak7";
+const char* password = "12345678";
 
 // Server URL — update to your machine's local IPv4 address
-String serverName = "http://10.134.170.160:5000/api/sensors/readings";
+String serverName = "http://10.86.5.160:5000/api/sensors/readings";
 
 // Production (Railway backend) — comment the local line above and uncomment this one to go live
 // String serverName = "https://hopeful-truth-production.up.railway.app/api/sensors/readings";
