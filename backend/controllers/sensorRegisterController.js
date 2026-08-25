@@ -195,6 +195,16 @@ export const registerSensor = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Sensor unique code already exists' })
     }
 
+    if (farmerId) {
+      const farmer = await User.findById(farmerId)
+      if (!farmer) {
+        return res.status(404).json({ success: false, message: 'Selected farmer not found.' })
+      }
+      if (farmer.sensorIds?.length > 0) {
+        return res.status(400).json({ success: false, message: 'This farmer already has a sensor assigned. Each farmer can only have one sensor node.' })
+      }
+    }
+
     const sensor = await SensorRegister.create({
       _id: _id.trim(),
       name: name.trim(),
@@ -264,6 +274,15 @@ export const updateSensor = async (req, res) => {
 
     // Reassign sensorIds on farmer records if farmerId changed
     if (oldFarmerId !== newFarmerId?.toString()) {
+      if (newFarmerId) {
+        const newFarmer = await User.findById(newFarmerId)
+        if (!newFarmer) {
+          return res.status(404).json({ success: false, message: 'Selected farmer not found.' })
+        }
+        if (newFarmer.sensorIds?.length > 0) {
+          return res.status(400).json({ success: false, message: 'This farmer already has a sensor assigned. Each farmer can only have one sensor node.' })
+        }
+      }
       if (oldFarmerId) {
         await User.findByIdAndUpdate(oldFarmerId, { $pull: { sensorIds: sensorId } })
       }

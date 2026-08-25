@@ -5,13 +5,13 @@
 
 // WiFi credentials
 const char* ssid     = "Ak7";
-const char* password = "12345678";
+const char* password = "11115555";
 
 // Server URL — update to your machine's local IPv4 address
-String serverName = "http://10.86.5.160:5000/api/sensors/readings";
+String serverName = "http://172.19.188.160:5000/api/sensors/readings";
 
 // Production (Railway backend) — comment the local line above and uncomment this one to go live
-// String serverName = "https://hopeful-truth-production.up.railway.app/api/sensors/readings";
+// String serverName = "https://smart-agriculture-project-production-ab20.up.railway.app//api/sensors/readings";
 
 // DHT11 — temperature + air humidity (pin 14)
 #define DHTPIN 14

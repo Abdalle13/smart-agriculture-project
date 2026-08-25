@@ -150,8 +150,9 @@ export default function AdminFieldNodes() {
     fetchData()
   }, [refreshTick])
 
-  const farmers       = users.filter(u => u.role === 'farmer' && u.isApproved)
-  const assignedCount = sensors.filter(s => s.farmerId).length
+  const farmers          = users.filter(u => u.role === 'farmer' && u.isApproved)
+  const availableFarmers = farmers.filter(f => !f.sensorIds?.length)
+  const assignedCount    = sensors.filter(s => s.farmerId).length
 
   // ── Register ──────────────────────────────────────────────────────────────
   const handleRegister = async (e) => {
@@ -244,8 +245,11 @@ export default function AdminFieldNodes() {
               <select value={editTarget.farmerId || ''} className={`${inputCls} cursor-pointer`}
                 onChange={e => setEditTarget(p => ({ ...p, farmerId: e.target.value }))}>
                 <option value="">Unassigned</option>
-                {farmers.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
+                {farmers
+                  .filter(f => !f.sensorIds?.length || f._id === editTarget.farmerId)
+                  .map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
               </select>
+              <p className="text-[10px] text-slate-400 mt-1">Only farmers without an existing sensor are listed — each farmer can have one node.</p>
             </Field>
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => setEditTarget(null)}
@@ -389,8 +393,9 @@ export default function AdminFieldNodes() {
               <select value={form.farmerId} onChange={e => setForm(p => ({ ...p, farmerId: e.target.value }))}
                 className={`${inputCls} cursor-pointer`}>
                 <option value="">Unassigned</option>
-                {farmers.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
+                {availableFarmers.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
               </select>
+              <p className="text-[10px] text-slate-400 mt-1">Only farmers without an existing sensor are listed — each farmer can have one node.</p>
             </Field>
             <button type="submit" disabled={submitting}
               className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-bold text-sm rounded-xl transition-all cursor-pointer disabled:cursor-not-allowed shadow-sm mt-2">
